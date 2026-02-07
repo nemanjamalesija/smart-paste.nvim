@@ -1,0 +1,8 @@
+.DS_Store
+
+# Personal project context
+CLAUDE.md
+.planning/
+LEARNING/
+AGENTS.md
+scripts/continue.sh

@@ -1,0 +1,132 @@
+*smart-paste.txt*	Context-aware paste with correct indentation
+
+smart-paste.nvim adjusts pasted code indentation to match cursor context.
+It supports normal-mode paste keys (`p`, `P`, `gp`, `gP`) and visual
+linewise replacement (`V` + `p`/`P`) without mutating user registers.
+
+==============================================================================
+CONTENTS						*smart-paste-contents*
+
+1. Introduction				|smart-paste-introduction|
+2. Requirements				|smart-paste-requirements|
+3. Setup					|smart-paste-setup|
+4. Mappings				|smart-paste-mappings|
+5. Configuration				|smart-paste-configuration|
+6. How It Works				|smart-paste-how-it-works|
+7. FAQ					|smart-paste-faq|
+
+==============================================================================
+1. INTRODUCTION					*smart-paste-introduction*
+						*smart-paste*
+
+smart-paste.nvim improves paste behavior for code editing by computing an
+indent delta between pasted source lines and the destination context, then
+applying that delta to all pasted lines.
+
+Highlights:
+- Smart indentation for linewise pastes in normal and visual mode
+- Dot-repeat support for normal-mode smart paste
+- Single undo-step operations
+- Register-safe behavior (registers are read, never rewritten)
+- Fallback to vanilla paste for charwise and blockwise operations
+
+==============================================================================
+2. REQUIREMENTS					*smart-paste-requirements*
+
+- Neovim >= 0.10
+- No runtime plugin dependencies
+
+==============================================================================
+3. SETUP						*smart-paste-setup*
+						*smart-paste.setup()*
+
+Call setup once during startup:
+>
+  require('smart-paste').setup()
+<
+
+With options:
+>
+  require('smart-paste').setup({
+    keys = { 'p', 'P', 'gp', 'gP' },
+    exclude_filetypes = { 'help', 'TelescopePrompt' },
+  })
+<
+
+==============================================================================
+4. MAPPINGS					*smart-paste-mappings*
+
+Default normal-mode mappings:
+- `p`   smart paste after cursor line
+- `P`   smart paste before cursor line
+- `gp`  smart paste after + follow cursor
+- `gP`  smart paste before + follow cursor
+
+Default visual-mode mappings:
+- `p`   replace linewise visual selection with smart-indented content
+- `P`   same replacement behavior (linewise visual mode)
+
+Escape hatches (vanilla behavior):
+- `<Plug>(smart-paste-raw-p)`
+- `<Plug>(smart-paste-raw-P)`
+
+Example custom bindings:
+>
+  vim.keymap.set('n', '<leader>p', '<Plug>(smart-paste-raw-p)')
+  vim.keymap.set('n', '<leader>P', '<Plug>(smart-paste-raw-P)')
+<
+
+==============================================================================
+5. CONFIGURATION				*smart-paste-configuration*
+
+`setup()` accepts:
+
+`keys` (string[])
+  Keys to remap in normal mode. Visual mode uses only `p` and `P`.
+
+`exclude_filetypes` (string[])
+  Filetypes where smart paste is bypassed and vanilla paste is used.
+
+By design, indentation options come from the current buffer:
+- `'expandtab'`
+- `'shiftwidth'`
+- `'tabstop'`
+
+No plugin-specific indentation options are required.
+
+==============================================================================
+6. HOW IT WORKS				*smart-paste-how-it-works*
+
+Target indent strategy cascade:
+1. `'indentexpr'` (if available and valid)
+2. Treesitter scope-based indent
+3. Heuristic fallback (nearest non-blank line)
+
+For linewise paste:
+1. Read register via `getreginfo()`
+2. Compute source indent and target indent
+3. Apply delta to all pasted lines
+4. Insert once with `nvim_put()`
+
+Visual linewise replacement:
+1. Read register
+2. Delete selected lines with `nvim_buf_set_lines()`
+3. Insert adjusted lines with `nvim_put()`
+
+Charwise/blockwise operations always fall through to vanilla Vim behavior.
+
+==============================================================================
+7. FAQ						*smart-paste-faq*
+
+Why is charwise paste not re-indented?
+  Re-indenting inline text is usually incorrect. smart-paste intentionally
+  limits indentation transforms to linewise content.
+
+Does this plugin modify registers?
+  No. Register content is read and transformed in memory only.
+
+Why does visual mode smart paste focus on linewise (`V`) selection?
+  It preserves predictable indentation semantics and avoids block/column
+  alignment breakage.
+
+ vim:tw=78:ts=8:ft=help:norl:

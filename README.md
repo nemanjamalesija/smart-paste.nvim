@@ -4,7 +4,7 @@ Pasted code automatically lands at the correct indentation level.
 
 ![CI](https://img.shields.io/github/actions/workflow/status/nemanjamalesija/smart-paste.nvim/ci.yml?branch=main&style=for-the-badge&label=CI) ![License](https://img.shields.io/github/license/nemanjamalesija/smart-paste.nvim?style=for-the-badge) ![Neovim](https://img.shields.io/badge/Neovim-0.10+-blueviolet?style=for-the-badge&logo=neovim)
 
-<!-- Demo GIF: replace this line with ![demo](assets/demo.gif) after recording -->
+![smart-paste demo](assets/demo.gif)
 
 ## Features
 
@@ -36,12 +36,6 @@ use {
     require('smart-paste').setup()
   end,
 }
-```
-
-```lua
--- mini.deps
-MiniDeps.add('nemanjamalesija/smart-paste.nvim')
-require('smart-paste').setup()
 ```
 
 ```vim
@@ -86,32 +80,6 @@ Example escape-hatch bindings:
 vim.keymap.set('n', '<leader>p', '<Plug>(smart-paste-raw-p)')
 vim.keymap.set('n', '<leader>P', '<Plug>(smart-paste-raw-P)')
 ```
-
-## How It Works
-
-smart-paste reads the register contents via `getreginfo()`, computes an indent delta between the pasted code's original indentation and the correct indentation at the cursor position, then applies that delta to every pasted line. The adjusted text is inserted with `nvim_put()` for atomic undo.
-
-1. `indentexpr` -- buffer's configured indent expression (highest fidelity)
-2. Treesitter scope depth -- walks the AST to count nesting levels
-3. Heuristic fallback -- uses nearest non-blank line's whitespace
-
-Charwise and blockwise register types fall through to vanilla Vim paste.
-
-## Comparison
-
-How does smart-paste compare to existing solutions?
-
-| Feature | smart-paste.nvim | vim-pasta | nvim-pasta | `]p` (builtin) |
-|---------|------------------|-----------|------------|----------------|
-| Treesitter-aware indent | Yes | No | No | No |
-| indentexpr support | Yes | No | No | Partial |
-| Visual mode paste | Yes (linewise) | Yes | Planned | No |
-| Dot-repeat | Yes | No | No | Yes |
-| Undo atomicity | Yes | No | Unknown | Yes |
-| Register safety | Yes (never mutates) | Unknown | Unknown | Yes |
-| Zero config | Yes | Yes | Needs keymap setup | N/A (builtin) |
-| Maintained (2025+) | Yes | No (2011) | Limited activity | Yes (core) |
-| Neovim Lua native | Yes | No (VimScript) | Yes | N/A |
 
 ## License
 

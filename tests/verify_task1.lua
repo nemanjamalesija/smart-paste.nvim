@@ -1,0 +1,88 @@
+-- Task 1 verification: setup API and keymap registration
+
+-- Test 1: setup() with no args
+local sp = require('smart-paste')
+assert(type(sp.setup) == 'function', 'setup missing')
+sp.setup()
+assert(sp.config ~= nil, 'config not stored')
+assert(#sp.config.keys == 4, 'should have 4 default keys, got ' .. #sp.config.keys)
+assert(#sp.config.exclude_filetypes == 0, 'should have 0 default excludes')
+print('PASS: setup() with no args works')
+
+-- Test 2: keymaps registered for all 4 default keys
+local maps = vim.api.nvim_get_keymap('n')
+local expected_keys = { p = false, P = false, gp = false, gP = false }
+for _, m in ipairs(maps) do
+  if m.desc and m.desc:find('Smart paste') then
+    expected_keys[m.lhs] = true
+  end
+end
+for k, found in pairs(expected_keys) do
+  assert(found, 'keymap for ' .. k .. ' not found')
+end
+print('PASS: all 4 default keymaps registered')
+
+-- Test 3: expr=true on keymaps
+for _, m in ipairs(maps) do
+  if m.lhs == 'p' and m.desc and m.desc:find('Smart paste') then
+    assert(m.expr == 1, 'expr not set on p keymap')
+  end
+end
+print('PASS: keymaps have expr=true')
+
+-- Test 4: Plug escape hatches
+local found_raw_p = false
+local found_raw_P = false
+for _, m in ipairs(maps) do
+  if m.lhs and m.lhs:find('smart%-paste%-raw%-p%)') then found_raw_p = true end
+  if m.lhs and m.lhs:find('smart%-paste%-raw%-P%)') then found_raw_P = true end
+end
+assert(found_raw_p, 'Plug raw-p not found')
+assert(found_raw_P, 'Plug raw-P not found')
+print('PASS: Plug escape hatches registered')
+
+-- Test 5: desc fields on Plug mappings
+for _, m in ipairs(maps) do
+  if m.lhs and m.lhs:find('smart%-paste%-raw') then
+    assert(m.desc and #m.desc > 0, 'Plug mapping missing desc: ' .. m.lhs)
+  end
+end
+print('PASS: all mappings have desc fields')
+
+-- Test 6: custom keys config
+package.loaded['smart-paste'] = nil
+local sp2 = require('smart-paste')
+sp2.setup({ keys = { 'p' } })
+assert(#sp2.config.keys == 1, 'custom keys not respected')
+local maps2 = vim.api.nvim_get_keymap('n')
+local p_found = false
+local gp_found = false
+for _, m in ipairs(maps2) do
+  if m.lhs == 'p' and m.desc and m.desc:find('Smart paste') then p_found = true end
+  if m.lhs == 'gp' and m.desc and m.desc:find('Smart paste') then gp_found = true end
+end
+assert(p_found, 'custom key p not registered')
+-- Note: gp may still be registered from previous setup() call, so we check config instead
+assert(#sp2.config.keys == 1, 'config should only have 1 key')
+print('PASS: custom keys config works')
+
+-- Test 7: exclude_filetypes stored
+package.loaded['smart-paste'] = nil
+local sp3 = require('smart-paste')
+sp3.setup({ exclude_filetypes = { 'help', 'TelescopePrompt' } })
+assert(#sp3.config.exclude_filetypes == 2, 'exclude_filetypes not stored')
+assert(sp3.config.exclude_filetypes[1] == 'help', 'first exclude wrong')
+assert(sp3.config.exclude_filetypes[2] == 'TelescopePrompt', 'second exclude wrong')
+print('PASS: exclude_filetypes config works')
+
+-- Test 8: line count check
+local f = io.open('lua/smart-paste/init.lua', 'r')
+local lines = 0
+for _ in f:lines() do lines = lines + 1 end
+f:close()
+assert(lines <= 60, 'init.lua is ' .. lines .. ' lines, should be <= 60')
+print('PASS: init.lua is ' .. lines .. ' lines (under 60)')
+
+print('')
+print('ALL TASK 1 VERIFICATION TESTS PASSED')
+vim.cmd('qa!')

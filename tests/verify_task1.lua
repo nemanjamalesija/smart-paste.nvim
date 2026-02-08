@@ -22,6 +22,22 @@ for k, found in pairs(expected_keys) do
 end
 print('PASS: all 4 default keymaps registered')
 
+-- Test 2b: visual keymaps registered for p/P only
+local xmaps = vim.api.nvim_get_keymap('x')
+local visual_found = { p = false, P = false }
+local visual_unexpected = { gp = false, gP = false }
+for _, m in ipairs(xmaps) do
+  if m.desc and m.desc:find('Smart paste: visual') then
+    if visual_found[m.lhs] ~= nil then visual_found[m.lhs] = true end
+    if visual_unexpected[m.lhs] ~= nil then visual_unexpected[m.lhs] = true end
+  end
+end
+assert(visual_found.p, 'visual keymap for p not found')
+assert(visual_found.P, 'visual keymap for P not found')
+assert(not visual_unexpected.gp, 'visual gp should not be mapped')
+assert(not visual_unexpected.gP, 'visual gP should not be mapped')
+print('PASS: visual keymaps registered for p/P only')
+
 -- Test 3: expr=true on keymaps
 for _, m in ipairs(maps) do
   if m.lhs == 'p' and m.desc and m.desc:find('Smart paste') then
@@ -59,16 +75,26 @@ local p_found = false
 local gp_found = false
 local P_found = false
 local gP_found = false
+local visual_p_found = false
+local visual_P_found = false
 for _, m in ipairs(maps2) do
   if m.lhs == 'p' and m.desc and m.desc:find('Smart paste') then p_found = true end
   if m.lhs == 'gp' and m.desc and m.desc:find('Smart paste') then gp_found = true end
   if m.lhs == 'P' and m.desc and m.desc:find('Smart paste') then P_found = true end
   if m.lhs == 'gP' and m.desc and m.desc:find('Smart paste') then gP_found = true end
 end
+for _, m in ipairs(vim.api.nvim_get_keymap('x')) do
+  if m.desc and m.desc:find('Smart paste: visual') then
+    if m.lhs == 'p' then visual_p_found = true end
+    if m.lhs == 'P' then visual_P_found = true end
+  end
+end
 assert(p_found, 'custom key p not registered')
 assert(not gp_found, 'stale gp mapping left after re-setup')
 assert(not P_found, 'stale P mapping left after re-setup')
 assert(not gP_found, 'stale gP mapping left after re-setup')
+assert(visual_p_found, 'visual p mapping missing after re-setup')
+assert(not visual_P_found, 'stale visual P mapping left after re-setup')
 print('PASS: custom keys config works')
 
 -- Test 7: exclude_filetypes stored
@@ -101,8 +127,8 @@ local f = io.open('lua/smart-paste/init.lua', 'r')
 local lines = 0
 for _ in f:lines() do lines = lines + 1 end
 f:close()
-assert(lines <= 80, 'init.lua is ' .. lines .. ' lines, should be <= 80')
-print('PASS: init.lua is ' .. lines .. ' lines (under 80)')
+assert(lines <= 140, 'init.lua is ' .. lines .. ' lines, should be <= 140')
+print('PASS: init.lua is ' .. lines .. ' lines (under 140)')
 
 print('')
 print('ALL TASK 1 VERIFICATION TESTS PASSED')

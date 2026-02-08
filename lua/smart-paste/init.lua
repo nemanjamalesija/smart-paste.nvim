@@ -8,10 +8,12 @@ local defaults = {
 --- Remove any previously managed smart-paste keymaps so re-running setup()
 --- (including module reload workflows) does not leave stale mappings behind.
 local function clear_managed_keymaps()
-  local maps = vim.api.nvim_get_keymap('n')
-  for _, map in ipairs(maps) do
-    if map.desc and map.desc:match('^Smart paste:') then
-      pcall(vim.keymap.del, 'n', map.lhs)
+  for _, mode in ipairs({ 'n', 'x' }) do
+    local maps = vim.api.nvim_get_keymap(mode)
+    for _, map in ipairs(maps) do
+      if map.desc and map.desc:match('^Smart paste:') then
+        pcall(vim.keymap.del, mode, map.lhs)
+      end
     end
   end
 end
@@ -35,6 +37,27 @@ function M.setup(opts)
       end
       return paste.smart_paste(key)
     end, { expr = true, desc = 'Smart paste: ' .. key })
+  end
+
+  for _, key in ipairs(config.keys) do
+    if key == 'p' or key == 'P' then
+      vim.keymap.set('x', key, function()
+        local reg = vim.v.register
+        local vmode = vim.fn.mode()
+
+        if vim.tbl_contains(config.exclude_filetypes, vim.bo.filetype) then
+          local raw_keys = 'gv"' .. reg .. key
+          vim.api.nvim_feedkeys(
+            vim.api.nvim_replace_termcodes(raw_keys, true, false, true),
+            'n', false
+          )
+          return
+        end
+
+        vim.cmd('normal! \27')
+        paste.do_visual_paste(reg, key, vmode)
+      end, { desc = 'Smart paste: visual ' .. key })
+    end
   end
 
   vim.keymap.set('n', '<Plug>(smart-paste-raw-p)', 'p', {

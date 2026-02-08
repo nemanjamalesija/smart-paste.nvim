@@ -265,6 +265,38 @@ for _, fpath in ipairs(lua_files) do
   print('PASS: ' .. fpath .. ' is ' .. count .. ' lines')
 end
 
+-- Test 12: visual linewise paste replaces selection with smart-indented content
+set_buf_lines({
+  'def foo():',
+  '    x = 1',
+  '    y = 2',
+  '',
+})
+vim.fn.setreg('j', { 'if True:', '    pass' }, 'V')
+vim.api.nvim_buf_set_mark(0, '<', 2, 0, {})
+vim.api.nvim_buf_set_mark(0, '>', 3, 0, {})
+paste.do_visual_paste('j', 'p', 'V')
+local visual_lines = get_buf_lines()
+if not vim.deep_equal(visual_lines, { 'def foo():', '    if True:', '        pass', '' }) then
+  fail_with_buffer('visual linewise smart paste should replace selection with re-indented content')
+end
+print('PASS: visual linewise paste re-indents replacement content')
+
+-- Test 13: setup registers x-mode keymaps for visual paste
+local xmaps = vim.api.nvim_get_keymap('x')
+local x_found_p = false
+local x_found_P = false
+for _, m in ipairs(xmaps) do
+  if m.desc and m.desc:find('Smart paste: visual') then
+    if m.lhs == 'p' then x_found_p = true end
+    if m.lhs == 'P' then x_found_P = true end
+  end
+end
+if not x_found_p or not x_found_P then
+  error('x-mode keymaps for visual smart paste were not registered')
+end
+print('PASS: x-mode keymaps for visual paste are registered')
+
 print('')
 print('ALL END-TO-END INTEGRATION TESTS PASSED')
 vim.cmd('qa!')

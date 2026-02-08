@@ -133,6 +133,120 @@ describe('indent', function()
     end)
   end)
 
+  describe('heuristic fallback', function()
+    it('returns heuristic indent when no indentexpr and no parser', function()
+      local bufnr = make_buf_with_lines({ '    code', '' })
+      vim.bo[bufnr].indentexpr = ''
+      vim.bo[bufnr].filetype = 'zzz_nonexistent'
+      local result = indent.get_target_indent(bufnr, 1)
+      assert.are.equal(4, result)
+      delete_buf(bufnr)
+    end)
+
+    it('does not error when treesitter parser is unavailable', function()
+      local bufnr = make_buf_with_lines({ '  code', '' })
+      vim.bo[bufnr].indentexpr = ''
+      vim.bo[bufnr].filetype = 'zzz_nonexistent'
+      local ok, result = pcall(indent.get_target_indent, bufnr, 1)
+      assert.is_true(ok)
+      assert.are.equal('number', type(result))
+      assert.are.equal(2, result)
+      delete_buf(bufnr)
+    end)
+  end)
+
+  describe('sanity check', function()
+    it('prefers heuristic when indentexpr diverges by more than 1 shiftwidth', function()
+      local bufnr = make_buf_with_lines({ '    code', '' }, { shiftwidth = 4, tabstop = 4 })
+      vim.bo[bufnr].indentexpr = '100'
+      local result = indent.get_target_indent(bufnr, 1)
+      assert.are.equal(4, result)
+      delete_buf(bufnr)
+    end)
+  end)
+
+  describe('indentexpr strategy', function()
+    it('uses indentexpr result when configured and within sanity bounds', function()
+      local bufnr = make_buf_with_lines({ '        code', '' }, { shiftwidth = 4, tabstop = 4 })
+      vim.bo[bufnr].indentexpr = '8'
+      local result = indent.get_target_indent(bufnr, 1)
+      assert.are.equal(8, result)
+      delete_buf(bufnr)
+    end)
+
+    it('falls through when indentexpr is empty string', function()
+      local bufnr = make_buf_with_lines({ '      code', '' }, { shiftwidth = 4, tabstop = 4 })
+      vim.bo[bufnr].indentexpr = ''
+      local result = indent.get_target_indent(bufnr, 1)
+      assert.are.equal(6, result)
+      delete_buf(bufnr)
+    end)
+
+    it('falls through when indentexpr returns -1', function()
+      local bufnr = make_buf_with_lines({ '    code', '' }, { shiftwidth = 4, tabstop = 4 })
+      vim.bo[bufnr].indentexpr = '-1'
+      local result = indent.get_target_indent(bufnr, 1)
+      assert.are.equal(4, result)
+      delete_buf(bufnr)
+    end)
+
+    it('falls through when indentexpr errors', function()
+      local bufnr = make_buf_with_lines({ '    code', '' }, { shiftwidth = 4, tabstop = 4 })
+      vim.bo[bufnr].indentexpr = "luaeval('error(\"boom\")')"
+      local result = indent.get_target_indent(bufnr, 1)
+      assert.are.equal(4, result)
+      delete_buf(bufnr)
+    end)
+  end)
+
+  do
+    local parser_probe = vim.api.nvim_create_buf(false, true)
+    vim.bo[parser_probe].filetype = 'lua'
+    local has_lua_parser = pcall(vim.treesitter.get_parser, parser_probe)
+    delete_buf(parser_probe)
+
+    if has_lua_parser then
+      describe('treesitter scope counting', function()
+        it('computes indent inside a Lua function body', function()
+          local bufnr = make_buf_with_lines({
+            'local function foo()',
+            '  local x = 1',
+            'end',
+          }, { shiftwidth = 2, tabstop = 2 })
+          vim.bo[bufnr].filetype = 'lua'
+          vim.bo[bufnr].indentexpr = ''
+          local result = indent.get_target_indent(bufnr, 1)
+          assert.are.equal(2, result)
+          delete_buf(bufnr)
+        end)
+
+        it('computes indent inside nested Lua scopes', function()
+          local bufnr = make_buf_with_lines({
+            'local function foo()',
+            '  if true then',
+            '    local x = 1',
+            '  end',
+            'end',
+          }, { shiftwidth = 2, tabstop = 2 })
+          vim.bo[bufnr].filetype = 'lua'
+          vim.bo[bufnr].indentexpr = ''
+          local result = indent.get_target_indent(bufnr, 2)
+          assert.are.equal(4, result)
+          delete_buf(bufnr)
+        end)
+
+        it('returns 0 at top-level scope', function()
+          local bufnr = make_buf_with_lines({ 'local x = 1' }, { shiftwidth = 2, tabstop = 2 })
+          vim.bo[bufnr].filetype = 'lua'
+          vim.bo[bufnr].indentexpr = ''
+          local result = indent.get_target_indent(bufnr, 0)
+          assert.are.equal(0, result)
+          delete_buf(bufnr)
+        end)
+      end)
+    end
+  end
+
   describe('apply_delta', function()
     it('adds positive delta to lines (expandtab=true)', function()
       local bufnr = make_buf({ expandtab = true, tabstop = 4 })

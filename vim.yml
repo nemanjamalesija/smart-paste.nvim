@@ -1,0 +1,18 @@
+---
+base: lua51
+name: vim
+globals:
+  vim:
+    any: true
+  jit:
+    any: true
+  describe:
+    any: true
+  it:
+    any: true
+  before_each:
+    any: true
+  after_each:
+    any: true
+  assert:
+    any: true

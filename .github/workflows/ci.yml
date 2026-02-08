@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  stylua:
+    name: StyLua
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run StyLua
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: v2.3.1
+          args: --check lua tests
+
+  selene:
+    name: Selene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run selene
+        uses: NTBBloodbath/selene-action@v1.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --display-style=quiet lua tests
+
+  typecheck:
+    name: LuaCATS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run Neovim typecheck
+        uses: stevearc/nvim-typecheck-action@v2
+        with:
+          path: lua
+          level: Warning
+
+  tests:
+    name: Tests (Neovim ${{ matrix.nvim_version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        nvim_version: [v0.10.4, v0.11.0, nightly]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.nvim_version }}
+      - name: Clone plenary.nvim
+        run: |
+          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim \
+            ~/.local/share/nvim/site/pack/vendor/start/plenary.nvim
+      - name: Run plenary specs
+        run: |
+          nvim --headless --noplugin -u tests/minimal_init.lua -i NONE \
+            -c "PlenaryBustedFile tests/indent_spec.lua { minimal_init = 'tests/minimal_init.lua', sequential = true, timeout = 60000 }" \
+            -c "PlenaryBustedFile tests/visual_paste_spec.lua { minimal_init = 'tests/minimal_init.lua', sequential = true, timeout = 60000 }" \
+            -c "qa!"
+      - name: Run integration verification
+        run: |
+          nvim --headless --noplugin -u NONE -i NONE \
+            -c "set noswapfile directory=/tmp | set rtp+=. | luafile tests/verify_task1.lua"
+          nvim --headless --noplugin -u NONE -i NONE \
+            -c "set noswapfile directory=/tmp | set rtp+=. | luafile tests/verify_task2_e2e.lua"

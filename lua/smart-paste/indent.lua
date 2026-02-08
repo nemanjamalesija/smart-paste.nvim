@@ -165,6 +165,7 @@ local function ts_get_indent(bufnr, row)
   local depth = 0
   local covers_target_row = (effective_row == row)
   local last_counted_start_row = nil
+  ---@type TSNode|nil
   local current = node
   while current do
     local start_row = select(1, current:start())

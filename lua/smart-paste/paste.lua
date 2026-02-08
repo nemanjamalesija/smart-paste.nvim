@@ -50,9 +50,15 @@ function M.do_paste(_motion_type)
   local key = state.key
 
   -- Fallback defaults for safety
-  if not reg then reg = '"' end
-  if not count then count = 1 end
-  if not key then key = 'p' end
+  if not reg then
+    reg = '"'
+  end
+  if not count then
+    count = 1
+  end
+  if not key then
+    key = 'p'
+  end
 
   local reginfo = vim.fn.getreginfo(reg)
   if not reginfo or not reginfo.regcontents then
@@ -62,10 +68,7 @@ function M.do_paste(_motion_type)
   -- Gate: only linewise registers get smart indentation
   if not vim.startswith(reginfo.regtype, 'V') then
     local raw_keys = '"' .. reg .. tostring(count) .. key
-    vim.api.nvim_feedkeys(
-      vim.api.nvim_replace_termcodes(raw_keys, true, false, true),
-      'n', false
-    )
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(raw_keys, true, false, true), 'n', false)
     return
   end
 
@@ -110,10 +113,7 @@ function M.do_visual_paste(reg, key, vmode, count_override)
   -- Gate: only linewise visual selections get smart indentation.
   if vmode ~= 'V' then
     local raw_keys = 'gv"' .. reg .. key
-    vim.api.nvim_feedkeys(
-      vim.api.nvim_replace_termcodes(raw_keys, true, false, true),
-      'n', false
-    )
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(raw_keys, true, false, true), 'n', false)
     return
   end
 

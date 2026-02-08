@@ -192,7 +192,7 @@ describe('indent', function()
 
     it('falls through when indentexpr errors', function()
       local bufnr = make_buf_with_lines({ '    code', '' }, { shiftwidth = 4, tabstop = 4 })
-      vim.bo[bufnr].indentexpr = "luaeval('error(\"boom\")')"
+      vim.bo[bufnr].indentexpr = 'luaeval(\'error("boom")\')'
       local result = indent.get_target_indent(bufnr, 1)
       assert.are.equal(4, result)
       delete_buf(bufnr)

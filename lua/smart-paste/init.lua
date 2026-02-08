@@ -47,10 +47,7 @@ function M.setup(opts)
 
         if vim.tbl_contains(config.exclude_filetypes, vim.bo.filetype) then
           local raw_keys = 'gv"' .. reg .. key
-          vim.api.nvim_feedkeys(
-            vim.api.nvim_replace_termcodes(raw_keys, true, false, true),
-            'n', false
-          )
+          vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(raw_keys, true, false, true), 'n', false)
           return
         end
 

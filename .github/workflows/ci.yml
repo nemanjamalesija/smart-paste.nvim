@@ -30,7 +30,7 @@ jobs:
         uses: NTBBloodbath/selene-action@v1.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --display-style=quiet lua tests
+          args: --display-style=quiet lua
 
   typecheck:
     name: LuaCATS

@@ -288,8 +288,12 @@ local x_found_p = false
 local x_found_P = false
 for _, m in ipairs(xmaps) do
   if m.desc and m.desc:find('Smart paste: visual') then
-    if m.lhs == 'p' then x_found_p = true end
-    if m.lhs == 'P' then x_found_P = true end
+    if m.lhs == 'p' then
+      x_found_p = true
+    end
+    if m.lhs == 'P' then
+      x_found_P = true
+    end
   end
 end
 if not x_found_p or not x_found_P then

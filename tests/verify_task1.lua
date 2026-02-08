@@ -28,8 +28,12 @@ local visual_found = { p = false, P = false }
 local visual_unexpected = { gp = false, gP = false }
 for _, m in ipairs(xmaps) do
   if m.desc and m.desc:find('Smart paste: visual') then
-    if visual_found[m.lhs] ~= nil then visual_found[m.lhs] = true end
-    if visual_unexpected[m.lhs] ~= nil then visual_unexpected[m.lhs] = true end
+    if visual_found[m.lhs] ~= nil then
+      visual_found[m.lhs] = true
+    end
+    if visual_unexpected[m.lhs] ~= nil then
+      visual_unexpected[m.lhs] = true
+    end
   end
 end
 assert(visual_found.p, 'visual keymap for p not found')
@@ -50,8 +54,12 @@ print('PASS: keymaps have expr=true')
 local found_raw_p = false
 local found_raw_P = false
 for _, m in ipairs(maps) do
-  if m.lhs and m.lhs:find('smart%-paste%-raw%-p%)') then found_raw_p = true end
-  if m.lhs and m.lhs:find('smart%-paste%-raw%-P%)') then found_raw_P = true end
+  if m.lhs and m.lhs:find('smart%-paste%-raw%-p%)') then
+    found_raw_p = true
+  end
+  if m.lhs and m.lhs:find('smart%-paste%-raw%-P%)') then
+    found_raw_P = true
+  end
 end
 assert(found_raw_p, 'Plug raw-p not found')
 assert(found_raw_P, 'Plug raw-P not found')
@@ -78,15 +86,27 @@ local gP_found = false
 local visual_p_found = false
 local visual_P_found = false
 for _, m in ipairs(maps2) do
-  if m.lhs == 'p' and m.desc and m.desc:find('Smart paste') then p_found = true end
-  if m.lhs == 'gp' and m.desc and m.desc:find('Smart paste') then gp_found = true end
-  if m.lhs == 'P' and m.desc and m.desc:find('Smart paste') then P_found = true end
-  if m.lhs == 'gP' and m.desc and m.desc:find('Smart paste') then gP_found = true end
+  if m.lhs == 'p' and m.desc and m.desc:find('Smart paste') then
+    p_found = true
+  end
+  if m.lhs == 'gp' and m.desc and m.desc:find('Smart paste') then
+    gp_found = true
+  end
+  if m.lhs == 'P' and m.desc and m.desc:find('Smart paste') then
+    P_found = true
+  end
+  if m.lhs == 'gP' and m.desc and m.desc:find('Smart paste') then
+    gP_found = true
+  end
 end
 for _, m in ipairs(vim.api.nvim_get_keymap('x')) do
   if m.desc and m.desc:find('Smart paste: visual') then
-    if m.lhs == 'p' then visual_p_found = true end
-    if m.lhs == 'P' then visual_P_found = true end
+    if m.lhs == 'p' then
+      visual_p_found = true
+    end
+    if m.lhs == 'P' then
+      visual_P_found = true
+    end
   end
 end
 assert(p_found, 'custom key p not registered')
@@ -125,7 +145,9 @@ print('PASS: re-setup restores default keyset')
 -- Test 9: line count check
 local f = io.open('lua/smart-paste/init.lua', 'r')
 local lines = 0
-for _ in f:lines() do lines = lines + 1 end
+for _ in f:lines() do
+  lines = lines + 1
+end
 f:close()
 assert(lines <= 140, 'init.lua is ' .. lines .. ' lines, should be <= 140')
 print('PASS: init.lua is ' .. lines .. ' lines (under 140)')

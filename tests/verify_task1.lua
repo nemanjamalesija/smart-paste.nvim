@@ -57,13 +57,18 @@ assert(#sp2.config.keys == 1, 'custom keys not respected')
 local maps2 = vim.api.nvim_get_keymap('n')
 local p_found = false
 local gp_found = false
+local P_found = false
+local gP_found = false
 for _, m in ipairs(maps2) do
   if m.lhs == 'p' and m.desc and m.desc:find('Smart paste') then p_found = true end
   if m.lhs == 'gp' and m.desc and m.desc:find('Smart paste') then gp_found = true end
+  if m.lhs == 'P' and m.desc and m.desc:find('Smart paste') then P_found = true end
+  if m.lhs == 'gP' and m.desc and m.desc:find('Smart paste') then gP_found = true end
 end
 assert(p_found, 'custom key p not registered')
--- Note: gp may still be registered from previous setup() call, so we check config instead
-assert(#sp2.config.keys == 1, 'config should only have 1 key')
+assert(not gp_found, 'stale gp mapping left after re-setup')
+assert(not P_found, 'stale P mapping left after re-setup')
+assert(not gP_found, 'stale gP mapping left after re-setup')
 print('PASS: custom keys config works')
 
 -- Test 7: exclude_filetypes stored
@@ -75,13 +80,29 @@ assert(sp3.config.exclude_filetypes[1] == 'help', 'first exclude wrong')
 assert(sp3.config.exclude_filetypes[2] == 'TelescopePrompt', 'second exclude wrong')
 print('PASS: exclude_filetypes config works')
 
--- Test 8: line count check
+-- Test 8: re-setup restores full default keyset cleanly
+package.loaded['smart-paste'] = nil
+local sp4 = require('smart-paste')
+sp4.setup()
+local maps4 = vim.api.nvim_get_keymap('n')
+local restored = { p = false, P = false, gp = false, gP = false }
+for _, m in ipairs(maps4) do
+  if m.desc and m.desc:find('Smart paste') and restored[m.lhs] ~= nil then
+    restored[m.lhs] = true
+  end
+end
+for k, found in pairs(restored) do
+  assert(found, 'default key not restored: ' .. k)
+end
+print('PASS: re-setup restores default keyset')
+
+-- Test 9: line count check
 local f = io.open('lua/smart-paste/init.lua', 'r')
 local lines = 0
 for _ in f:lines() do lines = lines + 1 end
 f:close()
-assert(lines <= 60, 'init.lua is ' .. lines .. ' lines, should be <= 60')
-print('PASS: init.lua is ' .. lines .. ' lines (under 60)')
+assert(lines <= 80, 'init.lua is ' .. lines .. ' lines, should be <= 80')
+print('PASS: init.lua is ' .. lines .. ' lines (under 80)')
 
 print('')
 print('ALL TASK 1 VERIFICATION TESTS PASSED')

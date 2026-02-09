@@ -55,7 +55,14 @@ group('charwise_paste', function()
     vim.api.nvim_set_current_buf(bufnr)
     vim.fn.setreg('a', 'return x', 'v')
     vim.api.nvim_win_set_cursor(0, { 2, 0 })
-    paste._test_set_state({ register = 'a', count = 1, key = ']p', after = true, follow = false, charwise_newline = true })
+    paste._test_set_state({
+      register = 'a',
+      count = 1,
+      key = ']p',
+      after = true,
+      follow = false,
+      charwise_newline = true,
+    })
     paste.do_paste('line')
     assert_eq(get_lines(bufnr), { 'def foo():', '    x = 1', '    return x', '' })
     delete_buf(bufnr)
@@ -66,7 +73,14 @@ group('charwise_paste', function()
     vim.api.nvim_set_current_buf(bufnr)
     vim.fn.setreg('b', 'return y', 'v')
     vim.api.nvim_win_set_cursor(0, { 2, 0 })
-    paste._test_set_state({ register = 'b', count = 1, key = '[p', after = false, follow = false, charwise_newline = true })
+    paste._test_set_state({
+      register = 'b',
+      count = 1,
+      key = '[p',
+      after = false,
+      follow = false,
+      charwise_newline = true,
+    })
     paste.do_paste('line')
     assert_eq(get_lines(bufnr), { 'def foo():', '    return y', '    y = 1', '' })
     delete_buf(bufnr)
@@ -77,7 +91,14 @@ group('charwise_paste', function()
     vim.api.nvim_set_current_buf(bufnr)
     vim.fn.setreg('c', '    return x', 'v')
     vim.api.nvim_win_set_cursor(0, { 2, 0 })
-    paste._test_set_state({ register = 'c', count = 1, key = ']p', after = true, follow = false, charwise_newline = true })
+    paste._test_set_state({
+      register = 'c',
+      count = 1,
+      key = ']p',
+      after = true,
+      follow = false,
+      charwise_newline = true,
+    })
     paste.do_paste('line')
     local lines = get_lines(bufnr)
     if lines[3] ~= '        return x' then
@@ -92,7 +113,14 @@ group('charwise_paste', function()
     vim.api.nvim_set_current_buf(bufnr)
     vim.fn.setreg('d', { 'if True:', '    pass' }, 'v')
     vim.api.nvim_win_set_cursor(0, { 2, 0 })
-    paste._test_set_state({ register = 'd', count = 1, key = ']p', after = true, follow = false, charwise_newline = true })
+    paste._test_set_state({
+      register = 'd',
+      count = 1,
+      key = ']p',
+      after = true,
+      follow = false,
+      charwise_newline = true,
+    })
     paste.do_paste('line')
     assert_eq(get_lines(bufnr), { 'def foo():', '    x = 1', '    if True:', '        pass', '' })
     delete_buf(bufnr)
@@ -103,7 +131,14 @@ group('charwise_paste', function()
     vim.api.nvim_set_current_buf(bufnr)
     vim.fn.setreg('e', { 'item' }, 'V')
     vim.api.nvim_win_set_cursor(0, { 2, 0 })
-    paste._test_set_state({ register = 'e', count = 1, key = ']p', after = true, follow = false, charwise_newline = true })
+    paste._test_set_state({
+      register = 'e',
+      count = 1,
+      key = ']p',
+      after = true,
+      follow = false,
+      charwise_newline = true,
+    })
     paste.do_paste('line')
     assert_eq(get_lines(bufnr), { 'def foo():', '    x = 1', '    item', '' })
     delete_buf(bufnr)
@@ -120,7 +155,14 @@ group('charwise_paste', function()
     end
 
     vim.fn.setreg('f', { 'XX' }, '\0222')
-    paste._test_set_state({ register = 'f', count = 1, key = ']p', after = true, follow = false, charwise_newline = true })
+    paste._test_set_state({
+      register = 'f',
+      count = 1,
+      key = ']p',
+      after = true,
+      follow = false,
+      charwise_newline = true,
+    })
     paste.do_paste('line')
 
     vim.api.nvim_feedkeys = orig_feedkeys
@@ -136,7 +178,14 @@ group('charwise_paste', function()
     vim.api.nvim_set_current_buf(bufnr)
     vim.fn.setreg('g', 'return z', 'v')
     vim.api.nvim_win_set_cursor(0, { 2, 0 })
-    paste._test_set_state({ register = 'g', count = 2, key = ']p', after = true, follow = false, charwise_newline = true })
+    paste._test_set_state({
+      register = 'g',
+      count = 2,
+      key = ']p',
+      after = true,
+      follow = false,
+      charwise_newline = true,
+    })
     paste.do_paste('line')
 
     local count = 0
@@ -157,7 +206,14 @@ group('charwise_paste', function()
     vim.api.nvim_set_current_buf(bufnr)
     vim.fn.setreg('h', 'return x   ', 'v')
     vim.api.nvim_win_set_cursor(0, { 2, 0 })
-    paste._test_set_state({ register = 'h', count = 1, key = ']p', after = true, follow = false, charwise_newline = true })
+    paste._test_set_state({
+      register = 'h',
+      count = 1,
+      key = ']p',
+      after = true,
+      follow = false,
+      charwise_newline = true,
+    })
     paste.do_paste('line')
     local lines = get_lines(bufnr)
     if lines[3] ~= '    return x   ' then
@@ -172,7 +228,14 @@ group('charwise_paste', function()
     vim.api.nvim_set_current_buf(bufnr)
     vim.fn.setreg('i', '', 'v')
     vim.api.nvim_win_set_cursor(0, { 2, 0 })
-    paste._test_set_state({ register = 'i', count = 1, key = ']p', after = true, follow = false, charwise_newline = true })
+    paste._test_set_state({
+      register = 'i',
+      count = 1,
+      key = ']p',
+      after = true,
+      follow = false,
+      charwise_newline = true,
+    })
 
     local ok, err = pcall(paste.do_paste, 'line')
     if not ok then

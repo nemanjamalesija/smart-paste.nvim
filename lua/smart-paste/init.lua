@@ -95,33 +95,35 @@ function M.setup(opts)
       table.insert(normalized_keys, norm)
     end
   end
+  --- @type string[]
+  local exclude_filetypes = config.exclude_filetypes
+  --- @type SmartPasteConfig
   local normalized_config = {
     keys = normalized_keys,
-    exclude_filetypes = config.exclude_filetypes,
+    exclude_filetypes = exclude_filetypes,
   }
-  --- @type SmartPasteConfig
   M.config = normalized_config
 
   local paste = require('smart-paste.paste')
 
   clear_managed_keymaps()
 
-  for _, entry in ipairs(normalized_config.keys) do
+  for _, entry in ipairs(normalized_keys) do
     vim.keymap.set('n', entry.lhs, function()
-      if vim.tbl_contains(normalized_config.exclude_filetypes, vim.bo.filetype) then
+      if vim.tbl_contains(exclude_filetypes, vim.bo.filetype) then
         return entry.lhs
       end
       return paste.smart_paste(entry)
     end, { expr = true, desc = 'Smart paste: ' .. entry.lhs })
   end
 
-  for _, entry in ipairs(normalized_config.keys) do
+  for _, entry in ipairs(normalized_keys) do
     if VISUAL_ELIGIBLE[entry.lhs] then
       vim.keymap.set('x', entry.lhs, function()
         local reg = vim.v.register
         local vmode = vim.fn.mode()
 
-        if vim.tbl_contains(normalized_config.exclude_filetypes, vim.bo.filetype) then
+        if vim.tbl_contains(exclude_filetypes, vim.bo.filetype) then
           local raw_keys = 'gv"' .. reg .. entry.lhs
           vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(raw_keys, true, false, true), 'n', false)
           return

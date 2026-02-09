@@ -1,8 +1,9 @@
 *smart-paste.txt*	Context-aware paste with correct indentation
 
 smart-paste.nvim adjusts pasted code indentation to match cursor context.
-It supports normal-mode paste keys (`p`, `P`, `gp`, `gP`) and visual
-linewise replacement (`V` + `p`/`P`) without mutating user registers.
+It supports normal-mode paste keys (`p`, `P`, `gp`, `gP`, `]p`, `[p`)
+and visual linewise replacement (`V` + `p`/`P`) without mutating user
+registers.
 
 ==============================================================================
 CONTENTS						*smart-paste-contents*
@@ -25,10 +26,12 @@ applying that delta to all pasted lines.
 
 Highlights:
 - Smart indentation for linewise pastes in normal and visual mode
+- Charwise-to-newline helpers via `]p` (below) and `[p` (above)
 - Dot-repeat support for normal-mode smart paste
 - Single undo-step operations
 - Register-safe behavior (registers are read, never rewritten)
-- Fallback to vanilla paste for charwise and blockwise operations
+- Fallback to vanilla paste for blockwise operations (and regular charwise
+  `p`/`P`/`gp`/`gP`)
 
 ==============================================================================
 2. REQUIREMENTS					*smart-paste-requirements*
@@ -48,8 +51,18 @@ Call setup once during startup:
 With options:
 >
   require('smart-paste').setup({
-    keys = { 'p', 'P', 'gp', 'gP' },
+    keys = { 'p', 'P', 'gp', 'gP', ']p', '[p' },
     exclude_filetypes = { 'help', 'TelescopePrompt' },
+  })
+<
+
+Structured key entries (mixed with strings) are also supported:
+>
+  require('smart-paste').setup({
+    keys = {
+      'p',
+      { lhs = '-p', after = true, follow = false, charwise_newline = true },
+    },
   })
 <
 
@@ -61,6 +74,10 @@ Default normal-mode mappings:
 - `P`   smart paste before cursor line
 - `gp`  smart paste after + follow cursor
 - `gP`  smart paste before + follow cursor
+- `]p`  paste charwise content as indented new line below
+        (linewise register behavior is same as `p`)
+- `[p`  paste charwise content as indented new line above
+        (linewise register behavior is same as `P`)
 
 Default visual-mode mappings:
 - `p`   replace linewise visual selection with smart-indented content
@@ -81,8 +98,12 @@ Example custom bindings:
 
 `setup()` accepts:
 
-`keys` (string[])
-  Keys to remap in normal mode. Visual mode uses only `p` and `P`.
+`keys` (string[] | table[])
+  Keys to remap in normal mode. Accepts flat strings and structured entries.
+  String values: `p`, `P`, `gp`, `gP`, `]p`, `[p`.
+  Structured form:
+    { lhs = 'key', after = bool, follow = bool, charwise_newline = bool }
+  Mixed formats are supported. Visual mode uses only `p` and `P`.
 
 `exclude_filetypes` (string[])
   Filetypes where smart paste is bypassed and vanilla paste is used.
@@ -108,19 +129,27 @@ For linewise paste:
 3. Apply delta to all pasted lines
 4. Insert once with `nvim_put()`
 
+For charwise `]p`/`[p` conversion:
+1. Read charwise register
+2. Strip leading whitespace from first line
+3. Compute source and target indent
+4. Apply delta and insert as linewise text with `nvim_put(..., 'l', ...)`
+
 Visual linewise replacement:
 1. Read register
 2. Delete selected lines with `nvim_buf_set_lines()`
 3. Insert adjusted lines with `nvim_put()`
 
-Charwise/blockwise operations always fall through to vanilla Vim behavior.
+Regular charwise `p`/`P`/`gp`/`gP` and blockwise operations fall through
+to vanilla Vim behavior.
 
 ==============================================================================
 7. FAQ						*smart-paste-faq*
 
-Why is charwise paste not re-indented?
-  Re-indenting inline text is usually incorrect. smart-paste intentionally
-  limits indentation transforms to linewise content.
+How do `]p` and `[p` differ from regular `p`/`P`?
+  `]p` and `[p` convert charwise register content into a smart-indented new
+  line below/above the cursor. Regular `p`/`P` keep Neovim's native inline
+  behavior for charwise registers.
 
 Does this plugin modify registers?
   No. Register content is read and transformed in memory only.

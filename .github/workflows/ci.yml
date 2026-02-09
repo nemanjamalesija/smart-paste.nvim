@@ -68,6 +68,7 @@ jobs:
           nvim --headless --noplugin -u tests/minimal_init.lua -i NONE \
             -c "PlenaryBustedFile tests/indent_spec.lua { minimal_init = 'tests/minimal_init.lua', sequential = true, timeout = 60000 }" \
             -c "PlenaryBustedFile tests/visual_paste_spec.lua { minimal_init = 'tests/minimal_init.lua', sequential = true, timeout = 60000 }" \
+            -c "PlenaryBustedFile tests/charwise_paste_spec.lua { minimal_init = 'tests/minimal_init.lua', sequential = true, timeout = 60000 }" \
             -c "qa!"
       - name: Run integration verification
         run: |

@@ -9,6 +9,7 @@ Pasted code automatically lands at the correct indentation level.
 ## Features
 
 - Intercepts `p` / `P` / `gp` / `gP` so linewise pasted code lands at the right indent level automatically.
+- Adds `]p` / `[p` to paste charwise content as a correctly indented new line below/above.
 - Three-tier indent strategy: `indentexpr` -> treesitter scope analysis -> heuristic fallback.
 - Visual mode (`V` + `p`/`P`): replace selected lines with correctly indented content.
 - Dot-repeat (`.`) works naturally.
@@ -54,12 +55,23 @@ With options:
 
 ```lua
 require('smart-paste').setup({
-  keys = { 'p', 'P', 'gp', 'gP' },   -- keys to enhance (default)
+  keys = { 'p', 'P', 'gp', 'gP', ']p', '[p' }, -- keys to enhance (default)
   exclude_filetypes = {},            -- filetypes that skip smart indent
 })
 ```
 
 Indentation settings (`shiftwidth`, `expandtab`, `tabstop`) come from your buffer options. No plugin-specific indent config needed.
+
+Structured key entries are also supported for custom behavior:
+
+```lua
+require('smart-paste').setup({
+  keys = {
+    'p',
+    { lhs = '-p', after = true, follow = false, charwise_newline = true },
+  },
+})
+```
 
 ## Mappings
 
@@ -69,12 +81,16 @@ Indentation settings (`shiftwidth`, `expandtab`, `tabstop`) come from your buffe
 | Normal | `P` | Smart paste before cursor line |
 | Normal | `gp` | Smart paste after cursor line and follow to end |
 | Normal | `gP` | Smart paste before cursor line and follow to end |
+| Normal | `]p` | Paste charwise content as smart-indented new line below (linewise: same as `p`) |
+| Normal | `[p` | Paste charwise content as smart-indented new line above (linewise: same as `P`) |
 | Visual (linewise `V`) | `p` | Replace selection with smart-indented content |
 | Visual (linewise `V`) | `P` | Replace selection with smart-indented content |
 | Normal | `<Plug>(smart-paste-raw-p)` | Raw `p` (bypass smart paste) |
 | Normal | `<Plug>(smart-paste-raw-P)` | Raw `P` (bypass smart paste) |
 
-Smart paste applies to linewise registers (for example: `yy`, `dd`, `2yy`, or linewise Visual `V` + `y`). Characterwise Visual (`v`) and blockwise (`<C-v>`) yanks use native Neovim paste behavior.
+Smart paste applies to linewise registers (for example: `yy`, `dd`, `2yy`, or linewise Visual `V` + `y`).
+For charwise registers, `]p` and `[p` convert inline content into smart-indented new lines.
+Characterwise paste on `p`/`P`/`gp`/`gP` and blockwise (`<C-v>`) paste use native Neovim behavior.
 
 Example escape-hatch bindings:
 

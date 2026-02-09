@@ -74,7 +74,7 @@ Indentation settings (`shiftwidth`, `expandtab`, `tabstop`) come from your buffe
 | Normal | `<Plug>(smart-paste-raw-p)` | Raw `p` (bypass smart paste) |
 | Normal | `<Plug>(smart-paste-raw-P)` | Raw `P` (bypass smart paste) |
 
-Smart paste applies to linewise registers (`yy`, `dd`, including multi-line yanks like `2yy` or `V` + `y`). Characterwise and blockwise (`<C-v>`) yanks use native Neovim paste behavior.
+Smart paste applies to linewise registers (for example: `yy`, `dd`, `2yy`, or linewise Visual `V` + `y`). Characterwise Visual (`v`) and blockwise (`<C-v>`) yanks use native Neovim paste behavior.
 
 Example escape-hatch bindings:
 

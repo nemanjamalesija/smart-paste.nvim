@@ -29,17 +29,6 @@ Pasted code automatically lands at the correct indentation level.
 }
 ```
 
-Testing this Phase 6 branch before merge:
-
-```lua
-{
-  "nemanjamalesija/smart-paste.nvim",
-  branch = "add-structured-key-config",
-  event = "VeryLazy",
-  config = true,
-}
-```
-
 ```lua
 -- packer.nvim
 use {

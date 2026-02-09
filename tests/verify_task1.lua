@@ -5,7 +5,7 @@ local sp = require('smart-paste')
 assert(type(sp.setup) == 'function', 'setup missing')
 sp.setup()
 assert(sp.config ~= nil, 'config not stored')
-assert(#sp.config.keys == 4, 'should have 4 default keys, got ' .. #sp.config.keys)
+assert(#sp.config.keys == 6, 'should have 6 default keys, got ' .. #sp.config.keys)
 for _, entry in ipairs(sp.config.keys) do
   assert(type(entry) == 'table', 'key entry should be a table after normalization')
   assert(type(entry.lhs) == 'string', 'key entry should have string lhs')
@@ -13,9 +13,9 @@ end
 assert(#sp.config.exclude_filetypes == 0, 'should have 0 default excludes')
 print('PASS: setup() with no args works')
 
--- Test 2: keymaps registered for all 4 default keys
+-- Test 2: keymaps registered for all 6 default keys
 local maps = vim.api.nvim_get_keymap('n')
-local expected_keys = { p = false, P = false, gp = false, gP = false }
+local expected_keys = { p = false, P = false, gp = false, gP = false, [']p'] = false, ['[p'] = false }
 for _, m in ipairs(maps) do
   if m.desc and m.desc:find('Smart paste') then
     expected_keys[m.lhs] = true
@@ -24,7 +24,7 @@ end
 for k, found in pairs(expected_keys) do
   assert(found, 'keymap for ' .. k .. ' not found')
 end
-print('PASS: all 4 default keymaps registered')
+print('PASS: all 6 default keymaps registered')
 
 -- Test 2b: visual keymaps registered for p/P only
 local xmaps = vim.api.nvim_get_keymap('x')
@@ -161,7 +161,7 @@ package.loaded['smart-paste'] = nil
 local sp4 = require('smart-paste')
 sp4.setup()
 local maps4 = vim.api.nvim_get_keymap('n')
-local restored = { p = false, P = false, gp = false, gP = false }
+local restored = { p = false, P = false, gp = false, gP = false, [']p'] = false, ['[p'] = false }
 for _, m in ipairs(maps4) do
   if m.desc and m.desc:find('Smart paste') and restored[m.lhs] ~= nil then
     restored[m.lhs] = true

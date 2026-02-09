@@ -13,7 +13,7 @@ local M = {}
 --- @field exclude_filetypes string[]
 
 local defaults = {
-  keys = { 'p', 'P', 'gp', 'gP' },
+  keys = { 'p', 'P', 'gp', 'gP', ']p', '[p' },
   exclude_filetypes = {},
 }
 

@@ -305,6 +305,117 @@ if not x_found_p or not x_found_P then
 end
 print('PASS: x-mode keymaps for visual paste are registered')
 
+-- Test 14: ]p charwise-to-newline inserts below with smart indent
+set_buf_lines({
+  'def foo():',
+  '    x = 1',
+  '',
+})
+vim.fn.setreg('k', 'return y', 'v')
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+paste._test_set_state({ register = 'k', count = 1, key = ']p', after = true, follow = false, charwise_newline = true })
+paste.do_paste('line')
+assert_line_exists('^    return y$', ']p should insert charwise content as indented new line')
+print('PASS: ]p charwise-to-newline produces correct indent')
+
+-- Test 15: [p charwise-to-newline inserts above with smart indent
+set_buf_lines({
+  'def bar():',
+  '    z = 9',
+  '',
+})
+vim.fn.setreg('l', 'return z', 'v')
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+paste._test_set_state({ register = 'l', count = 1, key = '[p', after = false, follow = false, charwise_newline = true })
+paste.do_paste('line')
+local lines15 = get_buf_lines()
+if lines15[2] ~= '    return z' then
+  fail_with_buffer('[p should insert charwise content as indented new line ABOVE cursor')
+end
+print('PASS: [p charwise-to-newline inserts above cursor')
+
+-- Test 16: blockwise register with charwise_newline falls through to vanilla
+do
+  local orig_feedkeys = vim.api.nvim_feedkeys
+  local feed_calls = 0
+  vim.api.nvim_feedkeys = function(...)
+    feed_calls = feed_calls + 1
+    return nil
+  end
+
+  vim.fn.setreg('m', { 'xx' }, '\0222')
+  paste._test_set_state({ register = 'm', count = 1, key = ']p', after = true, follow = false, charwise_newline = true })
+  paste.do_paste('line')
+
+  vim.api.nvim_feedkeys = orig_feedkeys
+  if feed_calls ~= 1 then
+    error('blockwise with charwise_newline should fall through to vanilla paste')
+  end
+end
+print('PASS: blockwise register with ]p falls through to vanilla paste')
+
+-- Test 17: dot-repeat replays ]p charwise-to-newline at new context
+set_buf_lines({
+  'root',
+  '    scope',
+  '',
+  'tail',
+})
+vim.fn.setreg('n', 'again', 'v')
+paste._test_set_state({ register = 'n', count = 1, key = ']p', after = true, follow = false, charwise_newline = true })
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+vim.go.operatorfunc = "v:lua.require'smart-paste.paste'.do_paste"
+vim.cmd('normal! g@l')
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+vim.cmd('normal! .')
+
+local dot_char_lines = get_buf_lines()
+local dot_char_top = 0
+local dot_char_scoped = 0
+for _, line in ipairs(dot_char_lines) do
+  if line == 'again' then
+    dot_char_top = dot_char_top + 1
+  end
+  if line == '    again' then
+    dot_char_scoped = dot_char_scoped + 1
+  end
+end
+if dot_char_top ~= 1 or dot_char_scoped ~= 1 then
+  fail_with_buffer('dot-repeat should replay ]p with context-aware indentation')
+end
+print('PASS: dot-repeat replays ]p charwise-to-newline with new-context indentation')
+
+-- Test 18: dot-repeat replays [p charwise-to-newline at new context
+set_buf_lines({
+  'root',
+  '    scope',
+  '',
+  'tail',
+})
+vim.fn.setreg('o', 'again', 'v')
+paste._test_set_state({ register = 'o', count = 1, key = '[p', after = false, follow = false, charwise_newline = true })
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+vim.go.operatorfunc = "v:lua.require'smart-paste.paste'.do_paste"
+vim.cmd('normal! g@l')
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+vim.cmd('normal! .')
+
+local dot_char_lines2 = get_buf_lines()
+local dot_char_top2 = 0
+local dot_char_scoped2 = 0
+for _, line in ipairs(dot_char_lines2) do
+  if line == 'again' then
+    dot_char_top2 = dot_char_top2 + 1
+  end
+  if line == '    again' then
+    dot_char_scoped2 = dot_char_scoped2 + 1
+  end
+end
+if dot_char_top2 ~= 1 or dot_char_scoped2 ~= 1 then
+  fail_with_buffer('dot-repeat should replay [p with context-aware indentation')
+end
+print('PASS: dot-repeat replays [p charwise-to-newline with new-context indentation')
+
 print('')
 print('ALL END-TO-END INTEGRATION TESTS PASSED')
 vim.cmd('qa!')

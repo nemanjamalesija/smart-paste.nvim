@@ -18,6 +18,18 @@ local function repeat_lines(lines, count)
   return out
 end
 
+--- Strip leading whitespace from the first line in a list.
+--- Trailing whitespace is preserved (may be intentional per user decision).
+--- @param lines string[]
+--- @return string[]
+local function strip_leading_whitespace(lines)
+  local result = vim.deepcopy(lines)
+  if #result > 0 then
+    result[1] = result[1]:match('^%s*(.*)$') or result[1]
+  end
+  return result
+end
+
 --- Expression mapping target for smart paste.
 --- Captures the current register, count, and key into module state,
 --- sets up the operatorfunc for dot-repeat, and returns the g@ trigger.
@@ -43,8 +55,10 @@ end
 --- Operatorfunc callback that performs the actual paste.
 --- Reads the register (never mutates it), computes indent delta for
 --- linewise content, and places text via a single `nvim_put` call
---- for undo atomicity. Charwise and blockwise registers fall through
---- to vanilla paste via `nvim_feedkeys`.
+--- for undo atomicity. When `charwise_newline` is enabled for a key entry,
+--- charwise register content is converted to indented linewise paste.
+--- Other charwise/blockwise operations fall through to vanilla paste via
+--- `nvim_feedkeys`.
 ---
 --- @param _motion_type string Ignored; required by operatorfunc signature
 function M.do_paste(_motion_type)
@@ -76,8 +90,26 @@ function M.do_paste(_motion_type)
     return
   end
 
-  -- Gate: only linewise registers get smart indentation
-  if not vim.startswith(reginfo.regtype, 'V') then
+  local is_linewise = vim.startswith(reginfo.regtype, 'V')
+
+  if not is_linewise then
+    local charwise_newline = state.charwise_newline == true
+    local is_charwise = (reginfo.regtype == 'v')
+
+    if charwise_newline and is_charwise then
+      local lines = reginfo.regcontents
+      local stripped = strip_leading_whitespace(lines)
+      local source_indent = indent.get_source_indent(stripped)
+      local bufnr = vim.api.nvim_get_current_buf()
+      local row = vim.api.nvim_win_get_cursor(0)[1] - 1 -- 0-indexed
+      local target_indent = indent.get_target_indent(bufnr, row)
+      local delta = target_indent - source_indent
+      local adjusted = indent.apply_delta(stripped, delta, bufnr)
+      local final_lines = repeat_lines(adjusted, count)
+      vim.api.nvim_put(final_lines, 'l', after, follow)
+      return
+    end
+
     local raw_keys = '"' .. reg .. tostring(count) .. key
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(raw_keys, true, false, true), 'n', false)
     return

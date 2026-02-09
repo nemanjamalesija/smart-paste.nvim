@@ -35,9 +35,8 @@ Testing this Phase 6 branch before merge:
 {
   "nemanjamalesija/smart-paste.nvim",
   branch = "add-structured-key-config",
-  opts = {
-    keys = { "p", "P", "gp", "gP", "]p", "[p" },
-  },
+  event = "VeryLazy",
+  config = true,
 }
 ```
 
@@ -70,18 +69,33 @@ Plug 'nemanjamalesija/smart-paste.nvim'
 require('smart-paste').setup()
 ```
 
-With options:
+Default mappings are enabled automatically:
+- `p`, `P`, `gp`, `gP`
+- `]p`, `[p`
+
+Optional setup:
 
 ```lua
 require('smart-paste').setup({
-  keys = { 'p', 'P', 'gp', 'gP', ']p', '[p' }, -- keys to enhance (default)
-  exclude_filetypes = {},            -- filetypes that skip smart indent
+  exclude_filetypes = {}, -- filetypes that skip smart indent
 })
 ```
 
 Indentation settings (`shiftwidth`, `expandtab`, `tabstop`) come from your buffer options. No plugin-specific indent config needed.
 
-Structured key entries are also supported for custom behavior:
+## Remapping Keys
+
+If you set `keys`, it replaces the defaults. Use this only when you want custom key behavior.
+
+Flat string remap:
+
+```lua
+require('smart-paste').setup({
+  keys = { 'p', 'P', ']p', '[p' },
+})
+```
+
+Structured remap (custom behavior flags):
 
 ```lua
 require('smart-paste').setup({

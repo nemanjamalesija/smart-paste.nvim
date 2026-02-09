@@ -29,6 +29,18 @@ Pasted code automatically lands at the correct indentation level.
 }
 ```
 
+Testing this Phase 6 branch before merge:
+
+```lua
+{
+  "nemanjamalesija/smart-paste.nvim",
+  branch = "add-structured-key-config",
+  opts = {
+    keys = { "p", "P", "gp", "gP", "]p", "[p" },
+  },
+}
+```
+
 ```lua
 -- packer.nvim
 use {
@@ -44,6 +56,13 @@ use {
 Plug 'nemanjamalesija/smart-paste.nvim'
 " then in your init.lua: require('smart-paste').setup()
 ```
+
+## What's New
+
+- New default mappings: `]p` and `[p` convert charwise yanks to smart-indented new lines below/above.
+- Structured key configuration is now supported: `{ lhs, after, follow, charwise_newline }`.
+- Dot-repeat and count support cover `]p`/`[p` flows.
+- Backward compatibility is preserved for existing flat `keys = { 'p', 'P', ... }` configs.
 
 ## Setup
 

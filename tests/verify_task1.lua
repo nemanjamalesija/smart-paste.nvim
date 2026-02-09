@@ -139,7 +139,18 @@ assert(sp_mixed.config.keys[1].lhs == 'p', 'first entry lhs wrong')
 assert(sp_mixed.config.keys[2].lhs == 'gp', 'second entry lhs wrong')
 print('PASS: mixed string/table keys config works')
 
--- Test 9: invalid key entries are skipped
+-- Test 9: table key aliasing via "like"
+package.loaded['smart-paste'] = nil
+local sp_like = require('smart-paste')
+sp_like.setup({ keys = { { lhs = '-p', like = ']p' } } })
+assert(#sp_like.config.keys == 1, 'like config should have 1 entry')
+assert(sp_like.config.keys[1].lhs == '-p', 'like config lhs wrong')
+assert(sp_like.config.keys[1].after == true, 'like config should inherit after=true')
+assert(sp_like.config.keys[1].follow == false, 'like config should inherit follow=false')
+assert(sp_like.config.keys[1].charwise_newline == true, 'like config should inherit charwise_newline=true')
+print('PASS: table key aliasing via like works')
+
+-- Test 10: invalid key entries are skipped
 package.loaded['smart-paste'] = nil
 local sp_invalid = require('smart-paste')
 sp_invalid.setup({ keys = { 'p', { no_lhs = true }, 42 } })
@@ -147,7 +158,7 @@ assert(#sp_invalid.config.keys == 1, 'invalid entries should be skipped, got ' .
 assert(sp_invalid.config.keys[1].lhs == 'p', 'valid entry should survive')
 print('PASS: invalid key entries are skipped')
 
--- Test 10: exclude_filetypes stored
+-- Test 11: exclude_filetypes stored
 package.loaded['smart-paste'] = nil
 local sp3 = require('smart-paste')
 sp3.setup({ exclude_filetypes = { 'help', 'TelescopePrompt' } })
@@ -156,7 +167,7 @@ assert(sp3.config.exclude_filetypes[1] == 'help', 'first exclude wrong')
 assert(sp3.config.exclude_filetypes[2] == 'TelescopePrompt', 'second exclude wrong')
 print('PASS: exclude_filetypes config works')
 
--- Test 11: re-setup restores full default keyset cleanly
+-- Test 12: re-setup restores full default keyset cleanly
 package.loaded['smart-paste'] = nil
 local sp4 = require('smart-paste')
 sp4.setup()
@@ -172,7 +183,7 @@ for k, found in pairs(restored) do
 end
 print('PASS: re-setup restores default keyset')
 
--- Test 12: line count check
+-- Test 13: line count check
 local f = io.open('lua/smart-paste/init.lua', 'r')
 local lines = 0
 for _ in f:lines() do

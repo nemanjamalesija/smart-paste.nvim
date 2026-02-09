@@ -62,6 +62,7 @@ Structured key entries (mixed with strings) are also supported:
     keys = {
       'p',
       { lhs = '-p', after = true, follow = false, charwise_newline = true },
+      { lhs = '=p', like = ']p' },
     },
   })
 <
@@ -103,6 +104,9 @@ Example custom bindings:
   String values: `p`, `P`, `gp`, `gP`, `]p`, `[p`.
   Structured form:
     { lhs = 'key', after = bool, follow = bool, charwise_newline = bool }
+  Alias form:
+    { lhs = 'key', like = ']p' }
+  where `like` may be one of: `p`, `P`, `gp`, `gP`, `]p`, `[p`.
   Mixed formats are supported. Visual mode uses only `p` and `P`.
 
 `exclude_filetypes` (string[])

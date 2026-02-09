@@ -8,6 +8,13 @@ local M = {}
 --- @class SmartPasteKeyEntry : SmartPasteKeyFlags
 --- @field lhs string
 
+--- @class SmartPasteKeyInput
+--- @field lhs string
+--- @field like? string
+--- @field after? boolean
+--- @field follow? boolean
+--- @field charwise_newline? boolean
+
 --- @class SmartPasteConfig
 --- @field keys SmartPasteKeyEntry[]
 --- @field exclude_filetypes string[]
@@ -49,7 +56,7 @@ end
 --- Normalize a key config entry to a canonical table shape.
 --- Accepts legacy string entries and structured table entries.
 --- Invalid entries are skipped by returning nil.
---- @param entry string|table
+--- @param entry string|SmartPasteKeyInput
 --- @return SmartPasteKeyEntry|nil
 local function normalize_key_entry(entry)
   if type(entry) == 'string' then
@@ -69,11 +76,40 @@ local function normalize_key_entry(entry)
     if type(entry.lhs) ~= 'string' then
       return nil
     end
+    local like_flags
+    if type(entry.like) == 'string' then
+      like_flags = INFERRED_FLAGS[entry.like]
+    end
+
+    local after = entry.after
+    if after == nil and like_flags then
+      after = like_flags.after
+    end
+    if after == nil then
+      after = false
+    end
+
+    local follow = entry.follow
+    if follow == nil and like_flags then
+      follow = like_flags.follow
+    end
+    if follow == nil then
+      follow = false
+    end
+
+    local charwise_newline = entry.charwise_newline
+    if charwise_newline == nil and like_flags then
+      charwise_newline = like_flags.charwise_newline
+    end
+    if charwise_newline == nil then
+      charwise_newline = false
+    end
+
     return {
       lhs = entry.lhs,
-      after = entry.after == true,
-      follow = entry.follow == true,
-      charwise_newline = entry.charwise_newline == true,
+      after = after,
+      follow = follow,
+      charwise_newline = charwise_newline,
     }
   end
 

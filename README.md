@@ -106,6 +106,17 @@ require('smart-paste').setup({
 })
 ```
 
+Shorthand remap by inheriting behavior from a built-in key:
+
+```lua
+require('smart-paste').setup({
+  keys = {
+    'p',
+    { lhs = '-p', like = ']p' }, -- behaves like ]p (charwise newline below)
+  },
+})
+```
+
 ## Mappings
 
 | Mode | Key | Action |

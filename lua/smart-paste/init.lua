@@ -1,10 +1,23 @@
 local M = {}
 
+--- @class SmartPasteKeyFlags
+--- @field after boolean
+--- @field follow boolean
+--- @field charwise_newline boolean
+
+--- @class SmartPasteKeyEntry : SmartPasteKeyFlags
+--- @field lhs string
+
+--- @class SmartPasteConfig
+--- @field keys SmartPasteKeyEntry[]
+--- @field exclude_filetypes string[]
+
 local defaults = {
   keys = { 'p', 'P', 'gp', 'gP' },
   exclude_filetypes = {},
 }
 
+--- @type table<string, SmartPasteKeyFlags>
 local INFERRED_FLAGS = {
   ['p'] = { after = true, follow = false, charwise_newline = false },
   ['P'] = { after = false, follow = false, charwise_newline = false },
@@ -14,6 +27,7 @@ local INFERRED_FLAGS = {
   ['[p'] = { after = false, follow = false, charwise_newline = true },
 }
 
+--- @type table<string, boolean>
 local VISUAL_ELIGIBLE = {
   p = true,
   P = true,
@@ -36,7 +50,7 @@ end
 --- Accepts legacy string entries and structured table entries.
 --- Invalid entries are skipped by returning nil.
 --- @param entry string|table
---- @return table|nil
+--- @return SmartPasteKeyEntry|nil
 local function normalize_key_entry(entry)
   if type(entry) == 'string' then
     local flags = INFERRED_FLAGS[entry]
@@ -57,9 +71,9 @@ local function normalize_key_entry(entry)
     end
     return {
       lhs = entry.lhs,
-      after = entry.after or false,
-      follow = entry.follow or false,
-      charwise_newline = entry.charwise_newline or false,
+      after = entry.after == true,
+      follow = entry.follow == true,
+      charwise_newline = entry.charwise_newline == true,
     }
   end
 
@@ -71,37 +85,43 @@ end
 --- and sets up Plug escape hatches for raw paste access.
 --- @param opts? table User configuration (keys, exclude_filetypes)
 function M.setup(opts)
+  --- @type { keys: (string|table)[], exclude_filetypes: string[] }
   local config = vim.tbl_deep_extend('force', defaults, opts or {})
+  --- @type SmartPasteKeyEntry[]
   local normalized_keys = {}
-  for _, entry in ipairs(config.keys) do
-    local norm = normalize_key_entry(entry)
+  for _, raw_entry in ipairs(config.keys) do
+    local norm = normalize_key_entry(raw_entry)
     if norm then
       table.insert(normalized_keys, norm)
     end
   end
-  config.keys = normalized_keys
-  M.config = config
+  local normalized_config = {
+    keys = normalized_keys,
+    exclude_filetypes = config.exclude_filetypes,
+  }
+  --- @type SmartPasteConfig
+  M.config = normalized_config
 
   local paste = require('smart-paste.paste')
 
   clear_managed_keymaps()
 
-  for _, entry in ipairs(config.keys) do
+  for _, entry in ipairs(normalized_config.keys) do
     vim.keymap.set('n', entry.lhs, function()
-      if vim.tbl_contains(config.exclude_filetypes, vim.bo.filetype) then
+      if vim.tbl_contains(normalized_config.exclude_filetypes, vim.bo.filetype) then
         return entry.lhs
       end
       return paste.smart_paste(entry)
     end, { expr = true, desc = 'Smart paste: ' .. entry.lhs })
   end
 
-  for _, entry in ipairs(config.keys) do
+  for _, entry in ipairs(normalized_config.keys) do
     if VISUAL_ELIGIBLE[entry.lhs] then
       vim.keymap.set('x', entry.lhs, function()
         local reg = vim.v.register
         local vmode = vim.fn.mode()
 
-        if vim.tbl_contains(config.exclude_filetypes, vim.bo.filetype) then
+        if vim.tbl_contains(normalized_config.exclude_filetypes, vim.bo.filetype) then
           local raw_keys = 'gv"' .. reg .. entry.lhs
           vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(raw_keys, true, false, true), 'n', false)
           return

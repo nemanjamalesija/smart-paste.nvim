@@ -8,7 +8,7 @@ Pasted code automatically lands at the correct indentation level.
 
 ## Features
 
-- Intercepts `p` / `P` / `gp` / `gP` so pasted code lands at the right indent level automatically.
+- Intercepts `p` / `P` / `gp` / `gP` so linewise pasted code lands at the right indent level automatically.
 - Three-tier indent strategy: `indentexpr` -> treesitter scope analysis -> heuristic fallback.
 - Visual mode (`V` + `p`/`P`): replace selected lines with correctly indented content.
 - Dot-repeat (`.`) works naturally.
@@ -73,6 +73,8 @@ Indentation settings (`shiftwidth`, `expandtab`, `tabstop`) come from your buffe
 | Visual (linewise `V`) | `P` | Replace selection with smart-indented content |
 | Normal | `<Plug>(smart-paste-raw-p)` | Raw `p` (bypass smart paste) |
 | Normal | `<Plug>(smart-paste-raw-P)` | Raw `P` (bypass smart paste) |
+
+Smart paste applies to linewise registers (`yy`, `dd`, including multi-line yanks like `2yy` or `V` + `y`). Characterwise and blockwise (`<C-v>`) yanks use native Neovim paste behavior.
 
 Example escape-hatch bindings:
 

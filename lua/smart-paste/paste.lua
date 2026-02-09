@@ -27,12 +27,15 @@ end
 --- via operatorfunc. On dot-repeat, Vim replays `g@l` automatically,
 --- re-invoking `do_paste` with the same captured state.
 ---
---- @param key string One of 'p', 'P', 'gp', 'gP'
+--- @param key_entry table Normalized key entry { lhs, after, follow, charwise_newline }
 --- @return string The keysequence 'g@l' to trigger operatorfunc
-function M.smart_paste(key)
+function M.smart_paste(key_entry)
   state.register = vim.v.register
   state.count = vim.v.count1
-  state.key = key
+  state.key = key_entry.lhs
+  state.after = key_entry.after
+  state.follow = key_entry.follow
+  state.charwise_newline = key_entry.charwise_newline
   vim.go.operatorfunc = "v:lua.require'smart-paste.paste'.do_paste"
   return 'g@l'
 end
@@ -48,6 +51,8 @@ function M.do_paste(_motion_type)
   local reg = state.register
   local count = state.count
   local key = state.key
+  local after = state.after
+  local follow = state.follow
 
   -- Fallback defaults for safety
   if not reg then
@@ -58,6 +63,12 @@ function M.do_paste(_motion_type)
   end
   if not key then
     key = 'p'
+  end
+  if after == nil then
+    after = true
+  end
+  if follow == nil then
+    follow = false
   end
 
   local reginfo = vim.fn.getreginfo(reg)
@@ -86,8 +97,6 @@ function M.do_paste(_motion_type)
   local final_lines = repeat_lines(adjusted, count)
 
   -- Place text: single nvim_put call = single undo step
-  local after = (key == 'p' or key == 'gp')
-  local follow = (key == 'gp' or key == 'gP')
   vim.api.nvim_put(final_lines, 'l', after, follow)
 end
 
@@ -168,13 +177,26 @@ end
 
 --- Test helper (not part of public API).
 --- Allows tests to set module state directly without going through smart_paste.
---- @param reg string Register name
---- @param count number Paste count
---- @param key string Paste key ('p', 'P', 'gp', 'gP')
-function M._test_set_state(reg, count, key)
-  state.register = reg
+--- @param reg_or_tbl string|table Register name or state table
+--- @param count? number Paste count (legacy signature)
+--- @param key? string Paste key (legacy signature)
+function M._test_set_state(reg_or_tbl, count, key)
+  if type(reg_or_tbl) == 'table' then
+    state.register = reg_or_tbl.register or '"'
+    state.count = reg_or_tbl.count or 1
+    state.key = reg_or_tbl.key or 'p'
+    state.after = reg_or_tbl.after
+    state.follow = reg_or_tbl.follow
+    state.charwise_newline = reg_or_tbl.charwise_newline
+    return
+  end
+
+  state.register = reg_or_tbl
   state.count = count
   state.key = key
+  state.after = (key == 'p' or key == 'gp' or key == ']p')
+  state.follow = (key == 'gp' or key == 'gP')
+  state.charwise_newline = (key == ']p' or key == '[p')
 end
 
 return M

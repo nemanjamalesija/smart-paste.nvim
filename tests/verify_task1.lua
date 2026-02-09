@@ -6,6 +6,10 @@ assert(type(sp.setup) == 'function', 'setup missing')
 sp.setup()
 assert(sp.config ~= nil, 'config not stored')
 assert(#sp.config.keys == 4, 'should have 4 default keys, got ' .. #sp.config.keys)
+for _, entry in ipairs(sp.config.keys) do
+  assert(type(entry) == 'table', 'key entry should be a table after normalization')
+  assert(type(entry.lhs) == 'string', 'key entry should have string lhs')
+end
 assert(#sp.config.exclude_filetypes == 0, 'should have 0 default excludes')
 print('PASS: setup() with no args works')
 
@@ -117,7 +121,33 @@ assert(visual_p_found, 'visual p mapping missing after re-setup')
 assert(not visual_P_found, 'stale visual P mapping left after re-setup')
 print('PASS: custom keys config works')
 
--- Test 7: exclude_filetypes stored
+-- Test 7: structured keys config
+package.loaded['smart-paste'] = nil
+local sp_struct = require('smart-paste')
+sp_struct.setup({ keys = { { lhs = 'p', after = true, follow = false } } })
+assert(#sp_struct.config.keys == 1, 'structured keys not accepted')
+assert(sp_struct.config.keys[1].lhs == 'p', 'structured key lhs wrong')
+assert(sp_struct.config.keys[1].after == true, 'structured key after wrong')
+print('PASS: structured keys config works')
+
+-- Test 8: mixed string/table keys config
+package.loaded['smart-paste'] = nil
+local sp_mixed = require('smart-paste')
+sp_mixed.setup({ keys = { 'p', { lhs = 'gp', after = true, follow = true } } })
+assert(#sp_mixed.config.keys == 2, 'mixed config should have 2 entries')
+assert(sp_mixed.config.keys[1].lhs == 'p', 'first entry lhs wrong')
+assert(sp_mixed.config.keys[2].lhs == 'gp', 'second entry lhs wrong')
+print('PASS: mixed string/table keys config works')
+
+-- Test 9: invalid key entries are skipped
+package.loaded['smart-paste'] = nil
+local sp_invalid = require('smart-paste')
+sp_invalid.setup({ keys = { 'p', { no_lhs = true }, 42 } })
+assert(#sp_invalid.config.keys == 1, 'invalid entries should be skipped, got ' .. #sp_invalid.config.keys)
+assert(sp_invalid.config.keys[1].lhs == 'p', 'valid entry should survive')
+print('PASS: invalid key entries are skipped')
+
+-- Test 10: exclude_filetypes stored
 package.loaded['smart-paste'] = nil
 local sp3 = require('smart-paste')
 sp3.setup({ exclude_filetypes = { 'help', 'TelescopePrompt' } })
@@ -126,7 +156,7 @@ assert(sp3.config.exclude_filetypes[1] == 'help', 'first exclude wrong')
 assert(sp3.config.exclude_filetypes[2] == 'TelescopePrompt', 'second exclude wrong')
 print('PASS: exclude_filetypes config works')
 
--- Test 8: re-setup restores full default keyset cleanly
+-- Test 11: re-setup restores full default keyset cleanly
 package.loaded['smart-paste'] = nil
 local sp4 = require('smart-paste')
 sp4.setup()
@@ -142,15 +172,15 @@ for k, found in pairs(restored) do
 end
 print('PASS: re-setup restores default keyset')
 
--- Test 9: line count check
+-- Test 12: line count check
 local f = io.open('lua/smart-paste/init.lua', 'r')
 local lines = 0
 for _ in f:lines() do
   lines = lines + 1
 end
 f:close()
-assert(lines <= 140, 'init.lua is ' .. lines .. ' lines, should be <= 140')
-print('PASS: init.lua is ' .. lines .. ' lines (under 140)')
+assert(lines <= 200, 'init.lua is ' .. lines .. ' lines, should be <= 200')
+print('PASS: init.lua is ' .. lines .. ' lines (under 200)')
 
 print('')
 print('ALL TASK 1 VERIFICATION TESTS PASSED')

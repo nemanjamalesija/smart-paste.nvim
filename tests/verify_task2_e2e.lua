@@ -416,6 +416,38 @@ if dot_char_top2 ~= 1 or dot_char_scoped2 ~= 1 then
 end
 print('PASS: dot-repeat replays [p charwise-to-newline with new-context indentation')
 
+-- Test 19: p on a scope opener uses insertion-point indent (first line in block)
+set_buf_lines({
+  'if cond {',
+  '    body()',
+  '}',
+})
+vim.fn.setreg('q', { 'stmt()' }, 'V')
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+paste._test_set_state('q', 1, 'p')
+paste.do_paste('line')
+local lines19 = get_buf_lines()
+if lines19[2] ~= '    stmt()' then
+  fail_with_buffer('p on scope opener should indent to first-line-in-block level')
+end
+print('PASS: p on scope opener indents to insertion point')
+
+-- Test 20: p before a closing token keeps body indent
+set_buf_lines({
+  'if cond {',
+  '    body()',
+  '}',
+})
+vim.fn.setreg('r', { 'stmt()' }, 'V')
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+paste._test_set_state('r', 1, 'p')
+paste.do_paste('line')
+local lines20 = get_buf_lines()
+if lines20[3] ~= '    stmt()' then
+  fail_with_buffer('p before closing token should keep body indentation')
+end
+print('PASS: p before closing token keeps body indentation')
+
 print('')
 print('ALL END-TO-END INTEGRATION TESTS PASSED')
 vim.cmd('qa!')

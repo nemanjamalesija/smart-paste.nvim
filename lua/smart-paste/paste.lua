@@ -30,6 +30,65 @@ local function strip_leading_whitespace(lines)
   return result
 end
 
+--- Heuristic: line ends with an opener token for block-like constructs.
+--- @param line string
+--- @return boolean
+local function looks_like_scope_opener(line)
+  if line:match('[%{%[%(:]%s*$') then
+    return true
+  end
+  return line:match('%f[%a](then|do|else|elseif|repeat|function)%s*$') ~= nil
+end
+
+--- Heuristic: line begins with a closing token for block-like constructs.
+--- @param line string
+--- @return boolean
+local function looks_like_scope_closer(line)
+  if line:match('^%s*[%}%]%)>]') then
+    return true
+  end
+  return line:match('^%s*(end|elif|else|elseif|catch|finally)%f[%A]') ~= nil
+end
+
+--- Resolve target indent for linewise insertion at the current cursor gap.
+--- Uses neighbor context only around likely scope boundaries so ordinary
+--- top-level/adjacent indentation remains stable.
+--- @param bufnr number
+--- @param cursor_row number 0-indexed
+--- @param after boolean
+--- @return number
+local function resolve_linewise_target_indent(bufnr, cursor_row, after)
+  local line_count = vim.api.nvim_buf_line_count(bufnr)
+  if line_count <= 0 then
+    return 0
+  end
+
+  local clamped_row = math.max(0, math.min(cursor_row, line_count - 1))
+  local current_indent = indent.get_target_indent(bufnr, clamped_row)
+  local current_line = vim.api.nvim_buf_get_lines(bufnr, clamped_row, clamped_row + 1, false)[1] or ''
+
+  if after then
+    local next_row = clamped_row + 1
+    if next_row < line_count and looks_like_scope_opener(current_line) then
+      local next_indent = indent.get_target_indent(bufnr, next_row)
+      if next_indent > current_indent then
+        return next_indent
+      end
+    end
+    return current_indent
+  end
+
+  local prev_row = clamped_row - 1
+  if prev_row >= 0 and looks_like_scope_closer(current_line) then
+    local prev_indent = indent.get_target_indent(bufnr, prev_row)
+    if prev_indent > current_indent then
+      return prev_indent
+    end
+  end
+
+  return current_indent
+end
+
 --- Expression mapping target for smart paste.
 --- Captures the current register, count, and key into module state,
 --- sets up the operatorfunc for dot-repeat, and returns the g@ trigger.
@@ -102,7 +161,7 @@ function M.do_paste(_motion_type)
       local source_indent = indent.get_source_indent(stripped)
       local bufnr = vim.api.nvim_get_current_buf()
       local row = vim.api.nvim_win_get_cursor(0)[1] - 1 -- 0-indexed
-      local target_indent = indent.get_target_indent(bufnr, row)
+      local target_indent = resolve_linewise_target_indent(bufnr, row, after)
       local delta = target_indent - source_indent
       local adjusted = indent.apply_delta(stripped, delta, bufnr)
       local final_lines = repeat_lines(adjusted, count)
@@ -121,7 +180,7 @@ function M.do_paste(_motion_type)
   local source_indent = indent.get_source_indent(lines)
   local bufnr = vim.api.nvim_get_current_buf()
   local row = vim.api.nvim_win_get_cursor(0)[1] - 1 -- 0-indexed
-  local target_indent = indent.get_target_indent(bufnr, row)
+  local target_indent = resolve_linewise_target_indent(bufnr, row, after)
   local delta = target_indent - source_indent
   local adjusted = indent.apply_delta(lines, delta, bufnr)
 

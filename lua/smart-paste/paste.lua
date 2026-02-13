@@ -30,6 +30,22 @@ local function strip_leading_whitespace(lines)
   return result
 end
 
+--- Resolve contextual indent for a specific row.
+--- For nonblank lines this uses actual leading whitespace width.
+--- For blank lines it falls back to indent engine prediction.
+--- @param bufnr number
+--- @param row number 0-indexed
+--- @return number indent
+--- @return string line
+local function resolve_row_context_indent(bufnr, row)
+  local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1] or ''
+  if line:match('^%s*$') then
+    return indent.get_target_indent(bufnr, row), line
+  end
+  local leading = line:match('^(%s*)') or ''
+  return vim.fn.strdisplaywidth(leading), line
+end
+
 --- Heuristic: line ends with an opener token for block-like constructs.
 --- @param line string
 --- @return boolean
@@ -64,13 +80,12 @@ local function resolve_linewise_target_indent(bufnr, cursor_row, after)
   end
 
   local clamped_row = math.max(0, math.min(cursor_row, line_count - 1))
-  local current_indent = indent.get_target_indent(bufnr, clamped_row)
-  local current_line = vim.api.nvim_buf_get_lines(bufnr, clamped_row, clamped_row + 1, false)[1] or ''
+  local current_indent, current_line = resolve_row_context_indent(bufnr, clamped_row)
 
   if after then
     local next_row = clamped_row + 1
     if next_row < line_count and looks_like_scope_opener(current_line) then
-      local next_indent = indent.get_target_indent(bufnr, next_row)
+      local next_indent = select(1, resolve_row_context_indent(bufnr, next_row))
       if next_indent > current_indent then
         return next_indent
       end
@@ -80,7 +95,7 @@ local function resolve_linewise_target_indent(bufnr, cursor_row, after)
 
   local prev_row = clamped_row - 1
   if prev_row >= 0 and looks_like_scope_closer(current_line) then
-    local prev_indent = indent.get_target_indent(bufnr, prev_row)
+    local prev_indent = select(1, resolve_row_context_indent(bufnr, prev_row))
     if prev_indent > current_indent then
       return prev_indent
     end

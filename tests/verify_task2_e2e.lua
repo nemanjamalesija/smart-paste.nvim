@@ -448,6 +448,25 @@ if lines20[3] ~= '    stmt()' then
 end
 print('PASS: p before closing token keeps body indentation')
 
+-- Test 21: linewise paste on nonblank row should use row indent even with noisy indentexpr
+set_buf_lines({
+  'def f():',
+  '    a = 1',
+  '    b = 2',
+  '    c = 3',
+})
+vim.bo.indentexpr = '8'
+vim.fn.setreg('s', { 'x = 9' }, 'V')
+vim.api.nvim_win_set_cursor(0, { 3, 0 })
+paste._test_set_state('s', 1, 'p')
+paste.do_paste('line')
+local lines21 = get_buf_lines()
+if lines21[4] ~= '    x = 9' then
+  fail_with_buffer('linewise paste should keep nonblank row indent when indentexpr is noisy')
+end
+vim.bo.indentexpr = ''
+print('PASS: nonblank row context wins over noisy indentexpr for linewise paste')
+
 print('')
 print('ALL END-TO-END INTEGRATION TESTS PASSED')
 vim.cmd('qa!')

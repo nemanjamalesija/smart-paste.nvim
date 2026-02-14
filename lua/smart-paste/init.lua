@@ -217,13 +217,27 @@ function M.paste(opts)
   opts = opts or {}
 
   local paste = require('smart-paste.paste')
-  local entry = normalize_key_entry(opts.key or 'p') or normalize_key_entry('p')
+  local entry = normalize_key_entry(opts.key or 'p')
+  if not entry then
+    entry = {
+      lhs = 'p',
+      after = true,
+      follow = false,
+      charwise_newline = false,
+    }
+  end
   local register = normalize_register(opts.register or vim.v.register)
   local count = normalize_count(opts.count)
   local exclude = (M.config and M.config.exclude_filetypes) or defaults.exclude_filetypes
 
   if vim.tbl_contains(exclude, vim.bo.filetype) then
-    local raw_count = count or vim.v.count1
+    local raw_count = count
+    if raw_count == nil then
+      raw_count = vim.v.count1
+    end
+    if raw_count == nil then
+      raw_count = 1
+    end
     local raw_keys = '"' .. register .. tostring(raw_count) .. entry.lhs
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(raw_keys, true, false, true), 'n', false)
     return

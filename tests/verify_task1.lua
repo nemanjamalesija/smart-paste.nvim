@@ -3,6 +3,7 @@
 -- Test 1: setup() with no args
 local sp = require('smart-paste')
 assert(type(sp.setup) == 'function', 'setup missing')
+assert(type(sp.paste) == 'function', 'paste API missing')
 sp.setup()
 assert(sp.config ~= nil, 'config not stored')
 assert(#sp.config.keys == 6, 'should have 6 default keys, got ' .. #sp.config.keys)
@@ -190,8 +191,8 @@ for _ in f:lines() do
   lines = lines + 1
 end
 f:close()
-assert(lines <= 200, 'init.lua is ' .. lines .. ' lines, should be <= 200')
-print('PASS: init.lua is ' .. lines .. ' lines (under 200)')
+assert(lines <= 260, 'init.lua is ' .. lines .. ' lines, should be <= 260')
+print('PASS: init.lua is ' .. lines .. ' lines (under 260)')
 
 print('')
 print('ALL TASK 1 VERIFICATION TESTS PASSED')

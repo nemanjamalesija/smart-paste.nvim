@@ -114,10 +114,23 @@ end
 --- re-invoking `do_paste` with the same captured state.
 ---
 --- @param key_entry table Normalized key entry { lhs, after, follow, charwise_newline }
+--- @param context? table Optional execution context { register?, count? }
 --- @return string The keysequence 'g@l' to trigger operatorfunc
-function M.smart_paste(key_entry)
-  state.register = vim.v.register
-  state.count = vim.v.count1
+function M.smart_paste(key_entry, context)
+  local register = vim.v.register
+  local count = vim.v.count1
+
+  if type(context) == 'table' then
+    if type(context.register) == 'string' and context.register ~= '' then
+      register = context.register
+    end
+    if type(context.count) == 'number' and context.count > 0 then
+      count = math.floor(context.count)
+    end
+  end
+
+  state.register = register
+  state.count = count
   state.key = key_entry.lhs
   state.after = key_entry.after
   state.follow = key_entry.follow

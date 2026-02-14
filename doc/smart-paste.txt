@@ -67,6 +67,22 @@ Structured key entries (mixed with strings) are also supported:
   })
 <
 
+Programmatic smart paste (register override for custom mappings):
+>
+  vim.keymap.set('n', '<M-p>', function()
+    require('smart-paste').paste({ register = '+', key = 'p' })
+  end)
+<
+						*smart-paste.paste()*
+`paste({ ... })` options:
+- `register` (string): register override (for example `+` or `"a`)
+- `key` (string|table): behavior key (`p`, `P`, `gp`, `gP`, `]p`, `[p`)
+  or structured entry (`{ lhs = 'x', after = bool, follow = bool, ... }`)
+- `count` (number): explicit repeat count override
+
+When called, `paste()` uses the same smart indent engine and dot-repeat path as
+normal mapped smart paste.
+
 ==============================================================================
 4. MAPPINGS					*smart-paste-mappings*
 

@@ -31,7 +31,8 @@ local function assert_line_exists(pattern, msg)
   fail_with_buffer(msg)
 end
 
-require('smart-paste').setup()
+local smart = require('smart-paste')
+smart.setup()
 local paste = require('smart-paste.paste')
 
 -- Test 1: Full smart paste flow (p)
@@ -466,6 +467,85 @@ if lines21[4] ~= '    x = 9' then
 end
 vim.bo.indentexpr = ''
 print('PASS: nonblank row context wins over noisy indentexpr for linewise paste')
+
+-- Test 22: public API paste() honors explicit register override
+set_buf_lines({
+  'def f():',
+  '    y = 0',
+  '',
+})
+vim.fn.setreg('t', { 'x = 1' }, 'V')
+vim.fn.setreg('"', { 'wrong = 2' }, 'V')
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+smart.paste({ register = 't', key = 'p' })
+local lines22 = get_buf_lines()
+if lines22[3] ~= '    x = 1' then
+  fail_with_buffer('paste() should use explicit register override')
+end
+print('PASS: paste() uses explicit register override')
+
+-- Test 23: public API paste() supports count override
+set_buf_lines({
+  'def f():',
+  '    y = 0',
+  '',
+})
+vim.fn.setreg('u', { 'x = 1' }, 'V')
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+smart.paste({ register = 'u', key = 'p', count = 2 })
+local x_count23 = 0
+for _, line in ipairs(get_buf_lines()) do
+  if line == '    x = 1' then
+    x_count23 = x_count23 + 1
+  end
+end
+if x_count23 ~= 2 then
+  fail_with_buffer('paste() count override should repeat inserted lines')
+end
+print('PASS: paste() supports count override')
+
+-- Test 24: public API paste() accepts quoted register syntax
+set_buf_lines({
+  'def f():',
+  '    y = 0',
+  '',
+})
+vim.fn.setreg('v', { 'x = 1' }, 'V')
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+smart.paste({ register = '"v', key = 'P' })
+local lines24 = get_buf_lines()
+if lines24[2] ~= '    x = 1' then
+  fail_with_buffer('paste() should normalize quoted register syntax')
+end
+print('PASS: paste() normalizes quoted register syntax')
+
+-- Test 25: public API paste() remains dot-repeatable
+set_buf_lines({
+  'root',
+  '    scope',
+  '',
+  'tail',
+})
+vim.fn.setreg('w', { 'again' }, 'V')
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+smart.paste({ register = 'w', key = 'p' })
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+vim.cmd('normal! .')
+local lines25 = get_buf_lines()
+local top25 = 0
+local scoped25 = 0
+for _, line in ipairs(lines25) do
+  if line == 'again' then
+    top25 = top25 + 1
+  end
+  if line == '    again' then
+    scoped25 = scoped25 + 1
+  end
+end
+if top25 ~= 1 or scoped25 ~= 1 then
+  fail_with_buffer('paste() should preserve dot-repeat behavior')
+end
+print('PASS: paste() preserves dot-repeat behavior')
 
 print('')
 print('ALL END-TO-END INTEGRATION TESTS PASSED')

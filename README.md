@@ -65,6 +65,21 @@ require('smart-paste').setup({
 
 Indentation settings (`shiftwidth`, `expandtab`, `tabstop`) come from your buffer options. No plugin-specific indent config needed.
 
+## Programmatic Paste API
+
+Use `paste()` when you want smart-paste behavior from a specific register in a custom non-recursive mapping:
+
+```lua
+vim.keymap.set('n', '<M-p>', function()
+  require('smart-paste').paste({ register = '+', key = 'p' })
+end, { desc = 'Smart paste from system clipboard' })
+```
+
+Supported options:
+- `register` (string): register override (`+`, `"a`, etc.). Defaults to `vim.v.register`.
+- `key` (string or table): paste behavior (`p`, `P`, `gp`, `gP`, `]p`, `[p`) or structured key entry.
+- `count` (number): explicit repeat count override.
+
 ## Remapping Keys
 
 If you set `keys`, it replaces the defaults. Use this only when you want custom key behavior.

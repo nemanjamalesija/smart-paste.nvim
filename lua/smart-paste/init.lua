@@ -19,6 +19,11 @@ local M = {}
 --- @field keys SmartPasteKeyEntry[]
 --- @field exclude_filetypes string[]
 
+--- @class SmartPastePasteOpts
+--- @field key? string|SmartPasteKeyInput Paste behavior key (default: 'p')
+--- @field register? string Register override (example: '+')
+--- @field count? number Paste count override
+
 local defaults = {
   keys = { 'p', 'P', 'gp', 'gP', ']p', '[p' },
   exclude_filetypes = {},
@@ -39,6 +44,30 @@ local VISUAL_ELIGIBLE = {
   p = true,
   P = true,
 }
+
+--- Normalize a register name to one Vim register character.
+--- Accepts both '+' and '"+' forms.
+--- @param register string|nil
+--- @return string
+local function normalize_register(register)
+  if type(register) ~= 'string' or register == '' then
+    return '"'
+  end
+  if vim.startswith(register, '"') and #register > 1 then
+    return register:sub(2, 2)
+  end
+  return register:sub(1, 1)
+end
+
+--- Normalize optional count input.
+--- @param count number|nil
+--- @return number|nil
+local function normalize_count(count)
+  if type(count) ~= 'number' or count <= 0 then
+    return nil
+  end
+  return math.floor(count)
+end
 
 --- Remove any previously managed smart-paste keymaps so re-running setup()
 --- (including module reload workflows) does not leave stale mappings behind.
@@ -179,6 +208,29 @@ function M.setup(opts)
     noremap = true,
     desc = 'Raw paste before (bypass smart-paste)',
   })
+end
+
+--- Perform smart paste programmatically from an optional explicit register.
+--- Useful for custom non-recursive mappings (for example: system clipboard).
+--- @param opts? SmartPastePasteOpts
+function M.paste(opts)
+  opts = opts or {}
+
+  local paste = require('smart-paste.paste')
+  local entry = normalize_key_entry(opts.key or 'p') or normalize_key_entry('p')
+  local register = normalize_register(opts.register or vim.v.register)
+  local count = normalize_count(opts.count)
+  local exclude = (M.config and M.config.exclude_filetypes) or defaults.exclude_filetypes
+
+  if vim.tbl_contains(exclude, vim.bo.filetype) then
+    local raw_count = count or vim.v.count1
+    local raw_keys = '"' .. register .. tostring(raw_count) .. entry.lhs
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(raw_keys, true, false, true), 'n', false)
+    return
+  end
+
+  local trigger = paste.smart_paste(entry, { register = register, count = count })
+  vim.cmd('normal! ' .. trigger)
 end
 
 return M

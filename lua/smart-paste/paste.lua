@@ -46,6 +46,20 @@ local function resolve_row_context_indent(bufnr, row)
   return vim.fn.strdisplaywidth(leading), line
 end
 
+--- Get effective shiftwidth for a specific buffer (`shiftwidth=0` -> `tabstop`).
+--- @param bufnr number
+--- @return number
+local function get_shiftwidth(bufnr)
+  local sw
+  vim.api.nvim_buf_call(bufnr, function()
+    sw = vim.fn.shiftwidth()
+  end)
+  if type(sw) ~= 'number' or sw <= 0 then
+    sw = vim.bo[bufnr].tabstop
+  end
+  return sw
+end
+
 --- Heuristic: line ends with an opener token for block-like constructs.
 --- @param line string
 --- @return boolean
@@ -85,9 +99,13 @@ local function resolve_linewise_target_indent(bufnr, cursor_row, after)
   if after then
     local next_row = clamped_row + 1
     if next_row < line_count and looks_like_scope_opener(current_line) then
-      local next_indent = select(1, resolve_row_context_indent(bufnr, next_row))
+      local next_indent, next_line = resolve_row_context_indent(bufnr, next_row)
       if next_indent > current_indent then
         return next_indent
+      end
+      -- Empty block case: opener followed by a closer at same indent.
+      if looks_like_scope_closer(next_line) and next_indent <= current_indent then
+        return current_indent + get_shiftwidth(bufnr)
       end
     end
     return current_indent

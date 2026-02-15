@@ -566,6 +566,36 @@ if lines26[2] ~= '    foo := 42' then
 end
 print('PASS: p on empty block opener indents inside block')
 
+-- Test 27: P on empty block closer indents one level inside block
+set_buf_lines({
+  'func dummy() {',
+  '}',
+})
+vim.fn.setreg('y', { '    foo := 42' }, 'V')
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+paste._test_set_state('y', 1, 'P')
+paste.do_paste('line')
+local lines27 = get_buf_lines()
+if lines27[2] ~= '    foo := 42' then
+  fail_with_buffer('P on empty block closer should indent inside block by one level')
+end
+print('PASS: P on empty block closer indents inside block')
+
+-- Test 28: [p on empty block closer indents one level inside block
+set_buf_lines({
+  'func dummy() {',
+  '}',
+})
+vim.fn.setreg('z', 'foo := 42', 'v')
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+paste._test_set_state({ register = 'z', count = 1, key = '[p', after = false, follow = false, charwise_newline = true })
+paste.do_paste('line')
+local lines28 = get_buf_lines()
+if lines28[2] ~= '    foo := 42' then
+  fail_with_buffer('[p on empty block closer should indent inside block by one level')
+end
+print('PASS: [p on empty block closer indents inside block')
+
 print('')
 print('ALL END-TO-END INTEGRATION TESTS PASSED')
 vim.cmd('qa!')

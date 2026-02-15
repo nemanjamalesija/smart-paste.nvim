@@ -113,9 +113,13 @@ local function resolve_linewise_target_indent(bufnr, cursor_row, after)
 
   local prev_row = clamped_row - 1
   if prev_row >= 0 and looks_like_scope_closer(current_line) then
-    local prev_indent = select(1, resolve_row_context_indent(bufnr, prev_row))
+    local prev_indent, prev_line = resolve_row_context_indent(bufnr, prev_row)
     if prev_indent > current_indent then
       return prev_indent
+    end
+    -- Empty block case: closer preceded by an opener at same indent.
+    if looks_like_scope_opener(prev_line) and prev_indent <= current_indent then
+      return current_indent + get_shiftwidth(bufnr)
     end
   end
 

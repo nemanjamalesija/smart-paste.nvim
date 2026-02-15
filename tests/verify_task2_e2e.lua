@@ -596,6 +596,72 @@ if lines28[2] ~= '    foo := 42' then
 end
 print('PASS: [p on empty block closer indents inside block')
 
+-- Test 29: p under multiline tag opener indents inside tag block
+set_buf_lines({
+  '  <SelectRoot',
+  '    id=\"playground\"',
+  '  >',
+  '  </SelectRoot>',
+})
+vim.fn.setreg('c', { '    foo := 42' }, 'V')
+vim.api.nvim_win_set_cursor(0, { 3, 0 })
+paste._test_set_state('c', 1, 'p')
+paste.do_paste('line')
+local lines29 = get_buf_lines()
+if lines29[4] ~= '      foo := 42' then
+  fail_with_buffer('p under multiline tag opener should indent inside tag block')
+end
+print('PASS: p under multiline tag opener indents inside tag block')
+
+-- Test 30: [p above closing tag indents inside tag block
+set_buf_lines({
+  '  <SelectRoot',
+  '    id=\"playground\"',
+  '  >',
+  '  </SelectRoot>',
+})
+vim.fn.setreg('d', 'foo := 42', 'v')
+vim.api.nvim_win_set_cursor(0, { 4, 0 })
+paste._test_set_state({ register = 'd', count = 1, key = '[p', after = false, follow = false, charwise_newline = true })
+paste.do_paste('line')
+local lines30 = get_buf_lines()
+if lines30[4] ~= '      foo := 42' then
+  fail_with_buffer('[p above closing tag should indent inside tag block')
+end
+print('PASS: [p above closing tag indents inside tag block')
+
+-- Test 31: p under opener with blank inner line still indents inside tag block
+set_buf_lines({
+  '  <SelectRoot>',
+  '',
+  '  </SelectRoot>',
+})
+vim.fn.setreg('e', { 'foo := 42' }, 'V')
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+paste._test_set_state('e', 1, 'p')
+paste.do_paste('line')
+local lines31 = get_buf_lines()
+if lines31[2] ~= '      foo := 42' then
+  fail_with_buffer('p under opener with blank inner line should indent inside tag block')
+end
+print('PASS: p under opener with blank inner line indents inside tag block')
+
+-- Test 32: [p above closer with blank inner line still indents inside tag block
+set_buf_lines({
+  '  <SelectRoot>',
+  '',
+  '  </SelectRoot>',
+})
+vim.fn.setreg('f', 'foo := 42', 'v')
+vim.api.nvim_win_set_cursor(0, { 3, 0 })
+paste._test_set_state({ register = 'f', count = 1, key = '[p', after = false, follow = false, charwise_newline = true })
+paste.do_paste('line')
+local lines32 = get_buf_lines()
+if lines32[3] ~= '      foo := 42' then
+  fail_with_buffer('[p above closer with blank inner line should indent inside tag block')
+end
+print('PASS: [p above closer with blank inner line indents inside tag block')
+
 print('')
 print('ALL END-TO-END INTEGRATION TESTS PASSED')
 vim.cmd('qa!')

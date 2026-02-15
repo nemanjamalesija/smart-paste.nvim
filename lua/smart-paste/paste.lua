@@ -60,11 +60,35 @@ local function get_shiftwidth(bufnr)
   return sw
 end
 
+--- Heuristic: line opens an HTML/Vue-like tag block.
+--- Supports single-line tag openers and multiline opener tails (`>` line).
+--- @param line string
+--- @return boolean
+local function looks_like_tag_opener(line)
+  if line:match('^%s*>%s*$') then
+    return true
+  end
+  if line:match('^%s*<[%w:_-]') and line:match('>%s*$') and not line:match('/>%s*$') and not line:match('^%s*</') then
+    return true
+  end
+  return false
+end
+
+--- Heuristic: line closes an HTML/Vue-like tag block.
+--- @param line string
+--- @return boolean
+local function looks_like_tag_closer(line)
+  return line:match('^%s*</[%w:_-][^>]*>%s*$') ~= nil
+end
+
 --- Heuristic: line ends with an opener token for block-like constructs.
 --- @param line string
 --- @return boolean
 local function looks_like_scope_opener(line)
   if line:match('[%{%[%(:]%s*$') then
+    return true
+  end
+  if looks_like_tag_opener(line) then
     return true
   end
   return line:match('%f[%a](then|do|else|elseif|repeat|function)%s*$') ~= nil
@@ -74,7 +98,10 @@ end
 --- @param line string
 --- @return boolean
 local function looks_like_scope_closer(line)
-  if line:match('^%s*[%}%]%)>]') then
+  if line:match('^%s*[%}%]%)]') then
+    return true
+  end
+  if looks_like_tag_closer(line) then
     return true
   end
   return line:match('^%s*(end|elif|else|elseif|catch|finally)%f[%A]') ~= nil
@@ -103,6 +130,9 @@ local function resolve_linewise_target_indent(bufnr, cursor_row, after)
       if next_indent > current_indent then
         return next_indent
       end
+      if next_line:match('^%s*$') then
+        return current_indent + get_shiftwidth(bufnr)
+      end
       -- Empty block case: opener followed by a closer at same indent.
       if looks_like_scope_closer(next_line) and next_indent <= current_indent then
         return current_indent + get_shiftwidth(bufnr)
@@ -116,6 +146,9 @@ local function resolve_linewise_target_indent(bufnr, cursor_row, after)
     local prev_indent, prev_line = resolve_row_context_indent(bufnr, prev_row)
     if prev_indent > current_indent then
       return prev_indent
+    end
+    if prev_line:match('^%s*$') then
+      return current_indent + get_shiftwidth(bufnr)
     end
     -- Empty block case: closer preceded by an opener at same indent.
     if looks_like_scope_opener(prev_line) and prev_indent <= current_indent then

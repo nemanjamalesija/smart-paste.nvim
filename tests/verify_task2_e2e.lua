@@ -599,7 +599,7 @@ print('PASS: [p on empty block closer indents inside block')
 -- Test 29: p under multiline tag opener indents inside tag block
 set_buf_lines({
   '  <SelectRoot',
-  '    id=\"playground\"',
+  '    id="playground"',
   '  >',
   '  </SelectRoot>',
 })
@@ -616,7 +616,7 @@ print('PASS: p under multiline tag opener indents inside tag block')
 -- Test 30: [p above closing tag indents inside tag block
 set_buf_lines({
   '  <SelectRoot',
-  '    id=\"playground\"',
+  '    id="playground"',
   '  >',
   '  </SelectRoot>',
 })

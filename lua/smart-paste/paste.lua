@@ -305,6 +305,16 @@ function M.do_visual_paste(reg, key, vmode, count_override)
     return
   end
 
+  -- Visual smart replacement is linewise-only on both axes:
+  -- linewise selection (`V`) and linewise register (`V...`).
+  -- Charwise/blockwise registers fall through to native visual paste.
+  local is_linewise_register = type(reginfo.regtype) == 'string' and vim.startswith(reginfo.regtype, 'V')
+  if not is_linewise_register then
+    local raw_keys = 'gv"' .. reg .. key
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(raw_keys, true, false, true), 'n', false)
+    return
+  end
+
   local start_row = vim.api.nvim_buf_get_mark(0, '<')[1]
   local end_row = vim.api.nvim_buf_get_mark(0, '>')[1]
   if start_row <= 0 or end_row <= 0 then

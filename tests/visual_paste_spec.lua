@@ -128,6 +128,29 @@ group('visual_paste', function()
     delete_buf(bufnr)
   end)
 
+  case('linewise visual mode with charwise register falls through to vanilla path', function()
+    local bufnr = make_buf({ 'alpha', 'beta' })
+    vim.api.nvim_set_current_buf(bufnr)
+    set_selection(bufnr, 1, 2)
+
+    local orig_feedkeys = vim.api.nvim_feedkeys
+    local calls = 0
+    vim.api.nvim_feedkeys = function(...)
+      calls = calls + 1
+      return orig_feedkeys(...)
+    end
+
+    vim.fn.setreg('z', 'XX', 'v')
+    paste.do_visual_paste('z', 'p', 'V')
+
+    vim.api.nvim_feedkeys = orig_feedkeys
+    if calls == 0 then
+      delete_buf(bufnr)
+      error('expected charwise register in linewise visual mode to call nvim_feedkeys')
+    end
+    delete_buf(bufnr)
+  end)
+
   case('blockwise visual mode falls through to vanilla path', function()
     local bufnr = make_buf({ 'alpha', 'beta' })
     vim.api.nvim_set_current_buf(bufnr)

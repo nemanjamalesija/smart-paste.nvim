@@ -306,6 +306,32 @@ if not x_found_p or not x_found_P then
 end
 print('PASS: x-mode keymaps for visual paste are registered')
 
+-- Test 13b: visual linewise paste with charwise register falls through to vanilla
+do
+  set_buf_lines({
+    'alpha',
+    'beta',
+  })
+  vim.fn.setreg('j2', 'XX', 'v')
+  vim.api.nvim_buf_set_mark(0, '<', 1, 0, {})
+  vim.api.nvim_buf_set_mark(0, '>', 2, 0, {})
+
+  local orig_feedkeys = vim.api.nvim_feedkeys
+  local feed_calls = 0
+  vim.api.nvim_feedkeys = function(...)
+    feed_calls = feed_calls + 1
+    return nil
+  end
+
+  paste.do_visual_paste('j2', 'p', 'V')
+  vim.api.nvim_feedkeys = orig_feedkeys
+
+  if feed_calls ~= 1 then
+    error('visual linewise paste with charwise register should use vanilla fallback')
+  end
+end
+print('PASS: visual linewise paste with charwise register falls through to vanilla')
+
 -- Test 14: ]p charwise-to-newline inserts below with smart indent
 set_buf_lines({
   'def foo():',

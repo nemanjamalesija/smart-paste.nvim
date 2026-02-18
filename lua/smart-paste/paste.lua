@@ -327,7 +327,7 @@ function M.do_visual_paste(reg, key, vmode, count_override)
   local count = count_override or vim.v.count1
   local bufnr = vim.api.nvim_get_current_buf()
   local source_lines = reginfo.regcontents
-  local target_indent = indent.get_target_indent(bufnr, start_row - 1)
+  local target_indent = select(1, resolve_row_context_indent(bufnr, start_row - 1))
   local source_indent = indent.get_source_indent(source_lines)
   local delta = target_indent - source_indent
   local adjusted = indent.apply_delta(source_lines, delta, bufnr)

@@ -332,6 +332,24 @@ do
 end
 print('PASS: visual linewise paste with charwise register falls through to vanilla')
 
+-- Test 13c: visual linewise paste on nonblank row ignores noisy indentexpr
+set_buf_lines({
+  'root:',
+  '  item: 1',
+  '  keep: 2',
+})
+vim.bo.indentexpr = '0'
+vim.fn.setreg('j3', { 'value: 9' }, 'V')
+vim.api.nvim_buf_set_mark(0, '<', 2, 0, {})
+vim.api.nvim_buf_set_mark(0, '>', 2, 0, {})
+paste.do_visual_paste('j3', 'p', 'V')
+vim.bo.indentexpr = ''
+local lines13c = get_buf_lines()
+if lines13c[2] ~= '  value: 9' then
+  fail_with_buffer('visual linewise paste should keep selected row indent when indentexpr is noisy')
+end
+print('PASS: visual linewise paste keeps selected row indent under noisy indentexpr')
+
 -- Test 14: ]p charwise-to-newline inserts below with smart indent
 set_buf_lines({
   'def foo():',

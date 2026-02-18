@@ -106,6 +106,24 @@ group('visual_paste', function()
     delete_buf(bufnr)
   end)
 
+  case('linewise visual paste on nonblank row ignores noisy indentexpr', function()
+    local bufnr = make_buf({
+      'root',
+      '  item',
+      '  keep',
+    })
+    vim.api.nvim_set_current_buf(bufnr)
+
+    vim.bo[bufnr].indentexpr = '0'
+    vim.fn.setreg('n', { 'value: 1' }, 'V')
+    set_selection(bufnr, 2, 2)
+    paste.do_visual_paste('n', 'p', 'V')
+    vim.bo[bufnr].indentexpr = ''
+
+    assert_eq(get_lines(bufnr), { 'root', '  value: 1', '  keep' })
+    delete_buf(bufnr)
+  end)
+
   case('charwise visual mode falls through to vanilla path', function()
     local bufnr = make_buf({ 'alpha', 'beta' })
     vim.api.nvim_set_current_buf(bufnr)

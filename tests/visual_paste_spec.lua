@@ -234,6 +234,18 @@ group('visual_paste', function()
     delete_buf(bufnr)
   end)
 
+  case('linewise visual paste on last line keeps replacement at EOF', function()
+    local bufnr = make_buf({ 'root', '  one: 1', '  two: 2' })
+    vim.api.nvim_set_current_buf(bufnr)
+
+    vim.fn.setreg('k', { 'three: 3' }, 'V')
+    set_selection(bufnr, 3, 3)
+    paste.do_visual_paste('k', 'p', 'V')
+
+    assert_eq(get_lines(bufnr), { 'root', '  one: 1', '  three: 3' })
+    delete_buf(bufnr)
+  end)
+
   case('visual smart paste is undone in a single step', function()
     local original = { 'def foo():', '    a = 1', '    b = 2', '' }
     local tmp = vim.fn.tempname()

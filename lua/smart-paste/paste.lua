@@ -341,10 +341,19 @@ function M.do_visual_paste(reg, key, vmode, count_override)
 
   local line_count = vim.api.nvim_buf_line_count(bufnr)
   local cursor_row = math.min(start_row, line_count)
+  local put_after = false
+  if start_row > line_count then
+    -- Selection touched EOF; insert below the new last line so replacement
+    -- lands at the original selection start (end-of-buffer position).
+    put_after = true
+  end
+  if cursor_row < 1 then
+    cursor_row = 1
+  end
   vim.api.nvim_win_set_cursor(0, { cursor_row, 0 })
 
   -- Insert replacement at deletion point as linewise text.
-  vim.api.nvim_put(final_lines, 'l', false, false)
+  vim.api.nvim_put(final_lines, 'l', put_after, false)
 
   -- Deleting and re-inserting full-buffer selections may leave one trailing
   -- empty artifact line; remove it when it exceeds expected output size.

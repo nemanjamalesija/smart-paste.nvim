@@ -350,6 +350,22 @@ if lines13c[2] ~= '  value: 9' then
 end
 print('PASS: visual linewise paste keeps selected row indent under noisy indentexpr')
 
+-- Test 13d: visual linewise paste on last line keeps replacement at EOF
+set_buf_lines({
+  'root',
+  '  one: 1',
+  '  two: 2',
+})
+vim.fn.setreg('j4', { 'three: 3' }, 'V')
+vim.api.nvim_buf_set_mark(0, '<', 3, 0, {})
+vim.api.nvim_buf_set_mark(0, '>', 3, 0, {})
+paste.do_visual_paste('j4', 'p', 'V')
+local lines13d = get_buf_lines()
+if lines13d[3] ~= '  three: 3' then
+  fail_with_buffer('visual linewise last-line replacement should stay at EOF position')
+end
+print('PASS: visual linewise last-line replacement stays at EOF')
+
 -- Test 14: ]p charwise-to-newline inserts below with smart indent
 set_buf_lines({
   'def foo():',

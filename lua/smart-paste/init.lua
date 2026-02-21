@@ -192,7 +192,7 @@ function M.setup(opts)
           return
         end
 
-        vim.cmd.normal({ '\27', bang = true })
+        vim.cmd.normal({ args = { '\27' }, bang = true })
         paste.do_visual_paste(reg, entry.lhs, vmode)
       end, { desc = 'Smart paste: visual ' .. entry.lhs })
     end
@@ -242,7 +242,7 @@ function M.paste(opts)
   end
 
   local trigger = paste.smart_paste(entry, { register = register, count = count })
-  vim.cmd.normal({ trigger, bang = true })
+  vim.cmd.normal({ args = { trigger }, bang = true })
 end
 
 return M

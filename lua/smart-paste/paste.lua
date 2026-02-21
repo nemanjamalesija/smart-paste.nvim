@@ -1,3 +1,4 @@
+--- @class SmartPaste.Paste
 local M = {}
 local indent = require('smart-paste.indent')
 
@@ -33,9 +34,9 @@ end
 --- Resolve contextual indent for a specific row.
 --- For nonblank lines this uses actual leading whitespace width.
 --- For blank lines it falls back to indent engine prediction.
---- @param bufnr number
---- @param row number 0-indexed
---- @return number indent
+--- @param bufnr integer
+--- @param row integer 0-indexed
+--- @return integer indent
 --- @return string line
 local function resolve_row_context_indent(bufnr, row)
   local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1] or ''
@@ -47,8 +48,8 @@ local function resolve_row_context_indent(bufnr, row)
 end
 
 --- Get effective shiftwidth for a specific buffer (`shiftwidth=0` -> `tabstop`).
---- @param bufnr number
---- @return number
+--- @param bufnr integer
+--- @return integer shiftwidth
 local function get_shiftwidth(bufnr)
   local sw
   vim.api.nvim_buf_call(bufnr, function()
@@ -110,10 +111,10 @@ end
 --- Resolve target indent for linewise insertion at the current cursor gap.
 --- Uses neighbor context only around likely scope boundaries so ordinary
 --- top-level/adjacent indentation remains stable.
---- @param bufnr number
---- @param cursor_row number 0-indexed
+--- @param bufnr integer
+--- @param cursor_row integer 0-indexed
 --- @param after boolean
---- @return number
+--- @return integer indent
 local function resolve_linewise_target_indent(bufnr, cursor_row, after)
   local line_count = vim.api.nvim_buf_line_count(bufnr)
   if line_count <= 0 then

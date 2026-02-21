@@ -1,3 +1,4 @@
+--- @class SmartPaste
 local M = {}
 
 --- @class SmartPasteKeyFlags
@@ -24,13 +25,15 @@ local M = {}
 --- @field register? string Register override (example: '+')
 --- @field count? number Paste count override
 
+--- @class SmartPasteOpts
+--- @field keys? (string|SmartPasteKeyInput)[]
+--- @field exclude_filetypes? string[]
 local defaults = {
   keys = { 'p', 'P', 'gp', 'gP', ']p', '[p' },
   exclude_filetypes = {},
 }
 
---- @type table<string, SmartPasteKeyFlags>
-local INFERRED_FLAGS = {
+local INFERRED_FLAGS = { --- @type table<string, SmartPasteKeyFlags>
   ['p'] = { after = true, follow = false, charwise_newline = false },
   ['P'] = { after = false, follow = false, charwise_newline = false },
   ['gp'] = { after = true, follow = true, charwise_newline = false },
@@ -39,8 +42,7 @@ local INFERRED_FLAGS = {
   ['[p'] = { after = false, follow = false, charwise_newline = true },
 }
 
---- @type table<string, boolean>
-local VISUAL_ELIGIBLE = {
+local VISUAL_ELIGIBLE = { --- @type table<string, boolean>
   p = true,
   P = true,
 }
@@ -48,12 +50,12 @@ local VISUAL_ELIGIBLE = {
 --- Normalize a register name to one Vim register character.
 --- Accepts both '+' and '"+' forms.
 --- @param register string|nil
---- @return string
+--- @return string normalized_register
 local function normalize_register(register)
   if type(register) ~= 'string' or register == '' then
     return '"'
   end
-  if vim.startswith(register, '"') and #register > 1 then
+  if vim.startswith(register, '"') and register:len() > 1 then
     return register:sub(2, 2)
   end
   return register:sub(1, 1)
@@ -61,7 +63,7 @@ end
 
 --- Normalize optional count input.
 --- @param count number|nil
---- @return number|nil
+--- @return integer|nil normalized_count
 local function normalize_count(count)
   if type(count) ~= 'number' or count <= 0 then
     return nil
@@ -86,7 +88,7 @@ end
 --- Accepts legacy string entries and structured table entries.
 --- Invalid entries are skipped by returning nil.
 --- @param entry string|SmartPasteKeyInput
---- @return SmartPasteKeyEntry|nil
+--- @return SmartPasteKeyEntry|nil normalized_key_entry
 local function normalize_key_entry(entry)
   if type(entry) == 'string' then
     local flags = INFERRED_FLAGS[entry]
@@ -148,22 +150,18 @@ end
 --- Initialize smart-paste with optional user configuration.
 --- Merges user opts with defaults, registers keymaps for configured keys,
 --- and sets up Plug escape hatches for raw paste access.
---- @param opts? table User configuration (keys, exclude_filetypes)
+--- @param opts? SmartPasteOpts User configuration (keys, exclude_filetypes)
 function M.setup(opts)
-  --- @type { keys: (string|table)[], exclude_filetypes: string[] }
   local config = vim.tbl_deep_extend('force', defaults, opts or {})
-  --- @type SmartPasteKeyEntry[]
-  local normalized_keys = {}
+  local normalized_keys = {} --- @type SmartPasteKeyEntry[]
   for _, raw_entry in ipairs(config.keys) do
     local norm = normalize_key_entry(raw_entry)
     if norm then
       table.insert(normalized_keys, norm)
     end
   end
-  --- @type string[]
-  local exclude_filetypes = config.exclude_filetypes
-  --- @type SmartPasteConfig
-  local normalized_config = {
+  local exclude_filetypes = config.exclude_filetypes --- @type string[]
+  local normalized_config = { --- @type SmartPasteConfig
     keys = normalized_keys,
     exclude_filetypes = exclude_filetypes,
   }
@@ -175,7 +173,7 @@ function M.setup(opts)
 
   for _, entry in ipairs(normalized_keys) do
     vim.keymap.set('n', entry.lhs, function()
-      if vim.tbl_contains(exclude_filetypes, vim.bo.filetype) then
+      if vim.list_contains(exclude_filetypes, vim.bo.filetype) then
         return entry.lhs
       end
       return paste.smart_paste(entry)
@@ -188,13 +186,13 @@ function M.setup(opts)
         local reg = vim.v.register
         local vmode = vim.fn.mode()
 
-        if vim.tbl_contains(exclude_filetypes, vim.bo.filetype) then
+        if vim.list_contains(exclude_filetypes, vim.bo.filetype) then
           local raw_keys = 'gv"' .. reg .. entry.lhs
           vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(raw_keys, true, false, true), 'n', false)
           return
         end
 
-        vim.cmd('normal! \27')
+        vim.cmd.normal({ args = { '\27' }, bang = true })
         paste.do_visual_paste(reg, entry.lhs, vmode)
       end, { desc = 'Smart paste: visual ' .. entry.lhs })
     end
@@ -219,7 +217,7 @@ function M.paste(opts)
   local paste = require('smart-paste.paste')
   local entry = normalize_key_entry(opts.key or 'p')
   if not entry then
-    entry = {
+    entry = { --- @type SmartPasteKeyEntry
       lhs = 'p',
       after = true,
       follow = false,
@@ -230,7 +228,7 @@ function M.paste(opts)
   local count = normalize_count(opts.count)
   local exclude = (M.config and M.config.exclude_filetypes) or defaults.exclude_filetypes
 
-  if vim.tbl_contains(exclude, vim.bo.filetype) then
+  if vim.list_contains(exclude, vim.bo.filetype) then
     local raw_count = count
     if raw_count == nil then
       raw_count = vim.v.count1
@@ -244,7 +242,7 @@ function M.paste(opts)
   end
 
   local trigger = paste.smart_paste(entry, { register = register, count = count })
-  vim.cmd('normal! ' .. trigger)
+  vim.cmd.normal({ args = { trigger }, bang = true })
 end
 
 return M

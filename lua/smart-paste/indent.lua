@@ -1,8 +1,9 @@
+--- @class SmartPaste.Indent
 local M = {}
 
 --- Check whether a line is empty or whitespace-only.
 --- @param line string
---- @return boolean
+--- @return boolean blank
 local function is_blank(line)
   return line:match('^%s*$') ~= nil
 end
@@ -10,15 +11,15 @@ end
 --- Measure the visual column width of leading whitespace in a line.
 --- Uses `vim.fn.strdisplaywidth` so mixed tabs/spaces compute correctly.
 --- @param line string
---- @return number
+--- @return integer leading_vcols
 local function leading_vcols(line)
   local leading = line:match('^(%s*)') or ''
   return vim.fn.strdisplaywidth(leading)
 end
 
 --- Get effective shiftwidth for a specific buffer (`shiftwidth=0` -> `tabstop`).
---- @param bufnr number
---- @return number
+--- @param bufnr integer
+--- @return integer shiftwidth
 local function get_shiftwidth(bufnr)
   local sw
   vim.api.nvim_buf_call(bufnr, function()
@@ -33,7 +34,7 @@ end
 --- Get the visual column indent of the first non-empty line in a list of lines.
 --- Empty and whitespace-only lines are skipped. Returns 0 if all lines are empty.
 --- @param lines string[] List of lines (e.g. from register content)
---- @return number Visual column width of leading whitespace
+--- @return integer vcol Visual column width of leading whitespace
 function M.get_source_indent(lines)
   for _, line in ipairs(lines) do
     if not is_blank(line) then
@@ -45,9 +46,9 @@ end
 
 --- Heuristic indent fallback: scan upward to nearest non-empty line and
 --- measure its leading whitespace in visual columns.
---- @param bufnr number Buffer handle
---- @param row number 0-indexed row number
---- @return number Visual column width of leading whitespace
+--- @param bufnr integer Buffer handle
+--- @param row integer 0-indexed row number
+--- @return integer vcol Visual column width of leading whitespace
 local function heuristic_get_indent(bufnr, row)
   local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1] or ''
 
@@ -70,9 +71,9 @@ end
 
 --- Evaluate buffer-local `indentexpr` for a target row.
 --- Returns nil when indentexpr is unset, errors, or provides no usable answer.
---- @param bufnr number Buffer handle
---- @param row number 0-indexed row number
---- @return number|nil
+--- @param bufnr integer Buffer handle
+--- @param row integer 0-indexed row number
+--- @return integer|nil indentexpr
 local function eval_indentexpr(bufnr, row)
   local indentexpr = vim.bo[bufnr].indentexpr
   if indentexpr == '' then
@@ -124,12 +125,12 @@ local SCOPE_NODES = {
 
 --- Compute indent from treesitter scope depth when parser data is available.
 --- Returns nil when parser/node data is unavailable.
---- @param bufnr number Buffer handle
---- @param row number 0-indexed row number
---- @return number|nil
+--- @param bufnr integer Buffer handle
+--- @param row integer 0-indexed row number
+--- @return integer|nil indent
 local function ts_get_indent(bufnr, row)
   local ok_parser, parser = pcall(vim.treesitter.get_parser, bufnr)
-  if not ok_parser or not parser then
+  if not (ok_parser and parser) then
     return nil
   end
 
@@ -192,10 +193,10 @@ local function ts_get_indent(bufnr, row)
 end
 
 --- Keep treesitter/indentexpr answers bounded to local heuristic context.
---- @param ts_indent number
---- @param heuristic_indent number
---- @param bufnr number
---- @return number
+--- @param ts_indent integer
+--- @param heuristic_indent integer
+--- @param bufnr integer
+--- @return integer indent
 local function sanity_check(ts_indent, heuristic_indent, bufnr)
   local sw = get_shiftwidth(bufnr)
   if math.abs(ts_indent - heuristic_indent) > sw then
@@ -206,9 +207,9 @@ end
 
 --- Get target indent using strategy cascade:
 --- `indentexpr` -> treesitter scope counting -> heuristic fallback.
---- @param bufnr number Buffer handle
---- @param row number 0-indexed row number
---- @return number Visual column width of leading whitespace
+--- @param bufnr integer Buffer handle
+--- @param row integer 0-indexed row number
+--- @return integer vcol Visual column width of leading whitespace
 function M.get_target_indent(bufnr, row)
   local heuristic_indent = heuristic_get_indent(bufnr, row)
 
@@ -236,8 +237,8 @@ end
 --- uses `tabstop` for tab-width calculations.
 ---
 --- @param lines string[] Lines to adjust
---- @param delta number Visual columns to add (positive) or remove (negative)
---- @param bufnr number Buffer handle (for expandtab/tabstop options)
+--- @param delta integer Visual columns to add (positive) or remove (negative)
+--- @param bufnr integer Buffer handle (for expandtab/tabstop options)
 --- @return string[] Adjusted lines (new table, never mutates input)
 function M.apply_delta(lines, delta, bufnr)
   if delta == 0 then

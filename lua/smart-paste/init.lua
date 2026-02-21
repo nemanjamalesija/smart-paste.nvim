@@ -26,7 +26,7 @@ local M = {}
 --- @field count? number Paste count override
 
 --- @class SmartPasteOpts
---- @field keys? string[]
+--- @field keys? (string|SmartPasteKeyInput)[]
 --- @field exclude_filetypes? string[]
 local defaults = {
   keys = { 'p', 'P', 'gp', 'gP', ']p', '[p' },

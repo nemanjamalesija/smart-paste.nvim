@@ -108,9 +108,9 @@ group('clipboard_crlf', function()
     paste.do_paste('line')
     assert_eq(get_lines(bufnr), {
       'local function test()',
-      'if condition then',
-      '    print("a")',
-      'end',
+      '    if condition then',
+      '        print("a")',
+      '    end',
       '    print("antes")',
       'end',
     })

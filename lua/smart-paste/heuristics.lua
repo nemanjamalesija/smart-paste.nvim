@@ -47,6 +47,32 @@ local function looks_like_tag_closer(line)
   return line:match('^%s*</[%w:_-][^>]*>%s*$') ~= nil
 end
 
+--- Heuristic: line is the head of a function definition or callback whose
+--- body follows on later lines. These lines end in `)`, so the token
+--- checks in `looks_like_scope_opener` never match them.
+--- A one-line complete definition like `function foo() return 1 end`
+--- ends in `end`, not `)`, so it stays excluded.
+--- @param line string
+--- @return boolean
+local function looks_like_function_head(line)
+  if not line:match('%)%s*$') then
+    return false
+  end
+  -- Statement position. A Lua statement starting with the function keyword
+  -- is always a definition, a call can never start with it. The frontier
+  -- rejects identifier characters after the keyword, so a call statement
+  -- like `function_helper(x)` does not match.
+  if line:match('^%s*local%s+function%f[^%w_]') or line:match('^%s*function%f[^%w_]') then
+    return true
+  end
+  -- Anonymous head at the end of the line, e.g. `local f = function(a)`
+  -- or `vim.schedule(function()`. The frontier before the keyword rejects
+  -- identifier characters, so a call like `my_function(data)` does not
+  -- match. A complete inline callback like `pcall(function() return x end)`
+  -- ends in `end)` and does not match either.
+  return line:match('%f[%w_]function%s*%([^()]*%)%s*$') ~= nil
+end
+
 local SCOPE_OPENER_KEYWORDS = { 'then', 'do', 'else', 'elseif', 'repeat', 'function' }
 local SCOPE_CLOSER_KEYWORDS = { 'end', 'elif', 'else', 'elseif', 'catch', 'finally' }
 
@@ -58,6 +84,9 @@ local function looks_like_scope_opener(line)
     return true
   end
   if looks_like_tag_opener(line) then
+    return true
+  end
+  if looks_like_function_head(line) then
     return true
   end
   -- Lua patterns have no alternation; test each keyword separately.

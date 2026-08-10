@@ -32,6 +32,27 @@ local function strip_leading_whitespace(lines)
   return result
 end
 
+--- Strip the trailing carriage return from each line when reading a system
+--- clipboard register (`+` or `*`). Windows clipboard providers (win32yank
+--- on WSL, for example) can hand over CRLF line endings. The stray `\r`
+--- ends up verbatim in the buffer and also breaks the indent heuristics,
+--- since a line like `if x then\r` no longer matches the opener patterns.
+--- Other registers are left untouched, so yanked buffer content that
+--- genuinely contains `^M` characters still pastes like vanilla.
+--- @param reg string Register name
+--- @param lines string[]
+--- @return string[]
+local function strip_clipboard_cr(reg, lines)
+  if reg ~= '+' and reg ~= '*' then
+    return lines
+  end
+  local result = {}
+  for i, line in ipairs(lines) do
+    result[i] = line:gsub('\r$', '')
+  end
+  return result
+end
+
 --- Remove trailing empty lines from a list (always keeps at least one line).
 --- A charwise selection ending at a line boundary (e.g. `v$`) captures the
 --- trailing newline as an empty entry; dropping it avoids a stray blank line
@@ -202,6 +223,7 @@ function M.do_paste(_motion_type)
     return
   end
 
+  local contents = strip_clipboard_cr(reg, reginfo.regcontents)
   local is_linewise = vim.startswith(reginfo.regtype, 'V')
 
   if not is_linewise then
@@ -210,7 +232,7 @@ function M.do_paste(_motion_type)
 
     local lines
     if is_charwise and (newline_mode == true or newline_mode == 'multiline') then
-      lines = strip_trailing_blank_lines(reginfo.regcontents)
+      lines = strip_trailing_blank_lines(contents)
       -- 'multiline' converts only when the yank effectively spans more than
       -- one line. The count is taken after dropping the `v$` trailing blank,
       -- so a single yanked word (or line) keeps the vanilla inline paste.
@@ -240,7 +262,7 @@ function M.do_paste(_motion_type)
     return
   end
 
-  local lines = reginfo.regcontents
+  local lines = contents
 
   -- Compute indent delta using the indent engine
   local source_indent = indent.get_source_indent(lines)
@@ -315,7 +337,7 @@ function M.do_visual_paste(reg, _key, vmode, count_override)
 
   local count = count_override or vim.v.count1
   local bufnr = vim.api.nvim_get_current_buf()
-  local source_lines = reginfo.regcontents
+  local source_lines = strip_clipboard_cr(reg, reginfo.regcontents)
   local target_indent = select(1, resolve_row_context_indent(bufnr, start_row - 1))
   local source_indent = indent.get_source_indent(source_lines)
   local delta = target_indent - source_indent

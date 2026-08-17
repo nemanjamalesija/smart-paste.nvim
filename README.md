@@ -65,6 +65,36 @@ require('smart-paste').setup({
 
 Indentation settings (`shiftwidth`, `expandtab`, `tabstop`) come from your buffer options. No plugin-specific indent config needed.
 
+## Mappings
+
+| Mode | Key | Action |
+|------|-----|--------|
+| Normal | `p` | Smart paste after cursor line |
+| Normal | `P` | Smart paste before cursor line |
+| Normal | `gp` | Smart paste after cursor line and follow to end |
+| Normal | `gP` | Smart paste before cursor line and follow to end |
+| Normal | `]p` | Paste charwise content as smart-indented new line below (linewise: same as `p`) |
+| Normal | `[p` | Paste charwise content as smart-indented new line above (linewise: same as `P`) |
+| Visual (linewise `V`) | `p` | Replace selection with smart-indented linewise content |
+| Visual (linewise `V`) | `P` | Replace selection with smart-indented linewise content |
+| Normal | `<Plug>(smart-paste-raw-p)` | Raw `p` (bypass smart paste) |
+| Normal | `<Plug>(smart-paste-raw-P)` | Raw `P` (bypass smart paste) |
+
+Behavior notes:
+
+- Smart paste applies to linewise registers (for example: `yy`, `dd`, `2yy`, or linewise Visual `V` + `y`).
+- For charwise registers, `]p` and `[p` convert inline content into smart-indented new lines.
+- Characterwise paste on `p`/`P`/`gp`/`gP` and blockwise (`<C-v>`) paste use native Neovim behavior.
+- Visual `V` + `p`/`P` also falls back to native behavior when the source register is charwise or blockwise.
+- Visual fallbacks are fed as native `P`, so the text you paste over never overwrites the register. This matches the smart path, where registers are read but never rewritten.
+
+Example escape-hatch bindings:
+
+```lua
+vim.keymap.set('n', '<leader>p', '<Plug>(smart-paste-raw-p)')
+vim.keymap.set('n', '<leader>P', '<Plug>(smart-paste-raw-P)')
+```
+
 ## Programmatic Paste API
 
 Use `paste()` when you want smart-paste behavior from a specific register in a custom non-recursive mapping:
@@ -123,34 +153,6 @@ require('smart-paste').setup({
     { lhs = '-p', like = ']p' }, -- behaves like ]p (charwise newline below)
   },
 })
-```
-
-## Mappings
-
-| Mode | Key | Action |
-|------|-----|--------|
-| Normal | `p` | Smart paste after cursor line |
-| Normal | `P` | Smart paste before cursor line |
-| Normal | `gp` | Smart paste after cursor line and follow to end |
-| Normal | `gP` | Smart paste before cursor line and follow to end |
-| Normal | `]p` | Paste charwise content as smart-indented new line below (linewise: same as `p`) |
-| Normal | `[p` | Paste charwise content as smart-indented new line above (linewise: same as `P`) |
-| Visual (linewise `V`) | `p` | Replace selection with smart-indented linewise content |
-| Visual (linewise `V`) | `P` | Replace selection with smart-indented linewise content |
-| Normal | `<Plug>(smart-paste-raw-p)` | Raw `p` (bypass smart paste) |
-| Normal | `<Plug>(smart-paste-raw-P)` | Raw `P` (bypass smart paste) |
-
-Smart paste applies to linewise registers (for example: `yy`, `dd`, `2yy`, or linewise Visual `V` + `y`).
-For charwise registers, `]p` and `[p` convert inline content into smart-indented new lines.
-Characterwise paste on `p`/`P`/`gp`/`gP` and blockwise (`<C-v>`) paste use native Neovim behavior.
-Visual `V` + `p`/`P` also falls back to native behavior when the source register is charwise or blockwise.
-Visual fallbacks are fed as native `P`, so the text you paste over never overwrites the register. This matches the smart path, where registers are read but never rewritten.
-
-Example escape-hatch bindings:
-
-```lua
-vim.keymap.set('n', '<leader>p', '<Plug>(smart-paste-raw-p)')
-vim.keymap.set('n', '<leader>P', '<Plug>(smart-paste-raw-P)')
 ```
 
 ## License
